@@ -1,4 +1,4 @@
-import { Tetromino, TetrominoType, Position, GameState } from '../types/tetris';
+import { Tetromino, TetrominoType } from '../types/tetris';
 import { TETROMINO_SHAPES, TETROMINO_SPAWN_POSITIONS } from '../constants/tetrominos';
 
 export const BOARD_WIDTH = 10;

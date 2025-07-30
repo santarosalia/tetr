@@ -73,8 +73,6 @@ export const PhysicsEffects: React.FC<PhysicsEffectsProps> = ({
       if (renderRef.current) {
         Matter.Render.stop(renderRef.current);
         renderRef.current.canvas.remove();
-        renderRef.current.canvas = null;
-        renderRef.current.context = null;
         renderRef.current.textures = {};
       }
       if (engineRef.current) {
@@ -140,7 +138,7 @@ export const PhysicsEffects: React.FC<PhysicsEffectsProps> = ({
   };
 
   // Expose methods to parent component
-  React.useImperativeHandle(React.useRef(), () => ({
+  React.useImperativeHandle(React.useRef<{ createLineEffect: (lineY: number, blocks: boolean[]) => void }>(), () => ({
     createLineEffect
   }));
 

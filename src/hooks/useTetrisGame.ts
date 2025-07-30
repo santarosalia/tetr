@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { GameState, TetrominoType } from '../types/tetris';
+import { GameState } from '../types/tetris';
 import {
   createEmptyBoard,
   createTetromino,
@@ -11,11 +11,7 @@ import {
   moveTetromino,
   dropTetromino,
   calculateScore,
-  calculateLevel,
-  isGameOver,
-  BOARD_WIDTH,
-  BOARD_HEIGHT
-} from '../utils/tetrisLogic';
+  calculateLevel} from '../utils/tetrisLogic';
 
 const INITIAL_DROP_INTERVAL = 1000;
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TetrisRenderer } from './components/TetrisRenderer';
 import { GameUI } from './components/GameUI';
 import { useTetrisGame } from './hooks/useTetrisGame';
@@ -7,7 +7,7 @@ const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 
 function App() {
-  const { gameState, movePiece, rotatePiece, hardDrop, togglePause, resetGame } = useTetrisGame();
+  const { gameState, togglePause, resetGame } = useTetrisGame();
   const [windowSize, setWindowSize] = useState({
     width: GAME_WIDTH,
     height: GAME_HEIGHT
