@@ -1,14 +1,12 @@
 import React from 'react';
-import { GameState } from '../types/tetris';
+import { useAppSelector, useAppDispatch } from '../hooks/redux';
 import { TETROMINO_SHAPES } from '../constants/tetrominos';
+import { togglePause, resetGame } from '../store/tetrisSlice';
 
-interface GameUIProps {
-  gameState: GameState;
-  onReset: () => void;
-  onPause: () => void;
-}
+export const GameUI: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const gameState = useAppSelector(state => state.tetris);
 
-export const GameUI: React.FC<GameUIProps> = ({ gameState, onReset, onPause }) => {
   const getTetrominoColor = (type: string) => {
     const colorMap: Record<string, string> = {
       'I': '#00f0f0',
@@ -54,6 +52,14 @@ export const GameUI: React.FC<GameUIProps> = ({ gameState, onReset, onPause }) =
     );
   };
 
+  const handlePause = () => {
+    dispatch(togglePause());
+  };
+
+  const handleReset = () => {
+    dispatch(resetGame());
+  };
+
   return (
     <div className="ui-panel">
       <div className="mb-5">
@@ -84,13 +90,13 @@ export const GameUI: React.FC<GameUIProps> = ({ gameState, onReset, onPause }) =
 
       <div className="mb-5 space-y-2">
         <button
-          onClick={onPause}
+          onClick={handlePause}
           className="w-full px-4 py-2 bg-gray-600 text-white border-none rounded cursor-pointer text-sm hover:bg-gray-700 transition-colors"
         >
           {gameState.paused ? '재개' : '일시정지'}
         </button>
         <button
-          onClick={onReset}
+          onClick={handleReset}
           className="w-full px-4 py-2 bg-red-600 text-white border-none rounded cursor-pointer text-sm hover:bg-red-700 transition-colors"
         >
           새 게임

@@ -1,18 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import * as PIXI from 'pixi.js';
-import { GameState } from '../types/tetris';
+import { useAppSelector } from '../hooks/redux';
 import { TETROMINO_COLORS } from '../constants/tetrominos';
 import { BOARD_WIDTH, BOARD_HEIGHT, BLOCK_SIZE } from '../utils/tetrisLogic';
 
 interface TetrisRendererProps {
-  gameState: GameState;
   width: number;
   height: number;
 }
 
-export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ gameState, width, height }) => {
+export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
+  const gameState = useAppSelector(state => state.tetris);
 
   useEffect(() => {
     if (!canvasRef.current) return;

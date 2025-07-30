@@ -7,7 +7,9 @@ const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 
 function App() {
-  const { gameState, togglePause, resetGame } = useTetrisGame();
+  // Redux 훅을 사용하여 게임 로직 초기화
+  useTetrisGame();
+  
   const [windowSize, setWindowSize] = useState({
     width: GAME_WIDTH,
     height: GAME_HEIGHT
@@ -38,15 +40,10 @@ function App() {
         }}
       >
         <TetrisRenderer
-          gameState={gameState}
           width={windowSize.width}
           height={windowSize.height}
         />
-        <GameUI
-          gameState={gameState}
-          onReset={resetGame}
-          onPause={togglePause}
-        />
+        <GameUI />
       </div>
     </div>
   );
