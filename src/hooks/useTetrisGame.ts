@@ -11,7 +11,16 @@ import {
   checkGameOver
 } from '../store/tetrisSlice';
 
-const INITIAL_DROP_INTERVAL = 1000;
+// 레벨에 따른 드롭 간격 계산 함수
+const calculateDropInterval = (level: number): number => {
+  // 표준 테트리스 속도 공식: (0.8 - ((level - 1) * 0.007))^(level - 1) * 1000
+  // 최소 50ms, 최대 1000ms
+  if (level <= 0) return 1000;
+  if (level >= 29) return 50;
+  
+  const baseInterval = Math.pow(0.8 - ((level - 1) * 0.007), level - 1) * 1000;
+  return Math.max(50, Math.min(1000, baseInterval));
+};
 
 export const useTetrisGame = () => {
   const dispatch = useAppDispatch();
@@ -101,7 +110,7 @@ export const useTetrisGame = () => {
         lastDropTimeRef.current = timestamp;
       }
 
-      const dropInterval = Math.max(50, INITIAL_DROP_INTERVAL - gameState.level * 50);
+      const dropInterval = calculateDropInterval(gameState.level);
       
       if (timestamp - lastDropTimeRef.current > dropInterval) {
         dispatch(dropPiece());

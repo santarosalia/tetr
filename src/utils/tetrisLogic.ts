@@ -128,7 +128,23 @@ export function dropTetromino(tetromino: Tetromino, board: number[][]): Tetromin
 
 export function calculateScore(linesCleared: number, level: number): number {
   const lineScores = [0, 100, 300, 500, 800];
-  return lineScores[linesCleared] * (level + 1);
+  const baseScore = lineScores[linesCleared];
+  
+  // 레벨을 2단위로 나누어 점수 배율 계산
+  // 레벨 0-1: 1배, 레벨 2-3: 1.5배, 레벨 4-5: 2배, 레벨 6-7: 2.5배...
+  const levelGroup = Math.floor(level / 2);
+  const levelMultiplier = 1 + (levelGroup * 0.5);
+  
+  return Math.floor(baseScore * levelMultiplier);
+}
+
+export function calculateHardDropBonus(level: number, dropDistance: number): number {
+  // 하드 드롭 거리에 따른 보너스 점수 (레벨을 2단위로 나누어 계산)
+  const baseBonus = dropDistance * 2;
+  const levelGroup = Math.floor(level / 2);
+  const levelMultiplier = 1 + (levelGroup * 0.3);
+  
+  return Math.floor(baseBonus * levelMultiplier);
 }
 
 export function calculateLevel(lines: number): number {

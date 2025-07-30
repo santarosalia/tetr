@@ -1,7 +1,16 @@
 import React from 'react';
 import { useAppSelector, useAppDispatch } from '../hooks/redux';
 import { TETROMINO_SHAPES } from '../constants/tetrominos';
-import { togglePause, resetGame } from '../store/tetrisSlice';
+import { togglePause, resetGame, setLevel } from '../store/tetrisSlice';
+
+// 레벨에 따른 드롭 간격 계산 함수 (useTetrisGame과 동일)
+const calculateDropInterval = (level: number): number => {
+  if (level <= 0) return 1000;
+  if (level >= 29) return 50;
+  
+  const baseInterval = Math.pow(0.8 - ((level - 1) * 0.007), level - 1) * 1000;
+  return Math.max(50, Math.min(1000, baseInterval));
+};
 
 export const GameUI: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -60,6 +69,14 @@ export const GameUI: React.FC = () => {
     dispatch(resetGame());
   };
 
+  const handleLevelChange = (newLevel: number) => {
+    dispatch(setLevel(newLevel));
+  };
+
+  // 현재 레벨의 드롭 간격 계산
+  const currentDropInterval = calculateDropInterval(gameState.level);
+  const speedPercentage = Math.round((1000 - currentDropInterval) / 10);
+
   return (
     <div className="ui-panel">
       <div className="mb-5">
@@ -73,6 +90,41 @@ export const GameUI: React.FC = () => {
         <h3 className="text-white text-lg font-semibold mb-2.5">레벨</h3>
         <div className="text-xl font-bold text-yellow-400">
           {gameState.level}
+        </div>
+        <div className="text-sm text-gray-300 mt-1">
+          속도: {speedPercentage}%
+        </div>
+        <div className="mt-2">
+          <div className="w-full bg-gray-700 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-green-400 to-red-400 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${speedPercentage}%` }}
+            ></div>
+          </div>
+        </div>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => handleLevelChange(Math.max(0, gameState.level - 1))}
+            className={`flex-1 px-2 py-1 text-white border-none rounded cursor-pointer text-xs transition-colors ${
+              gameState.level <= 0 
+                ? 'bg-gray-500 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+            disabled={gameState.level <= 0}
+          >
+            -
+          </button>
+          <button
+            onClick={() => handleLevelChange(Math.min(29, gameState.level + 1))}
+            className={`flex-1 px-2 py-1 text-white border-none rounded cursor-pointer text-xs transition-colors ${
+              gameState.level >= 29 
+                ? 'bg-gray-500 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+            disabled={gameState.level >= 29}
+          >
+            +
+          </button>
         </div>
       </div>
 
@@ -101,15 +153,6 @@ export const GameUI: React.FC = () => {
         >
           새 게임
         </button>
-      </div>
-
-      <div className="text-xs text-gray-300 leading-relaxed">
-        <div className="font-bold text-white mb-1">조작법:</div>
-        <div>← → : 이동</div>
-        <div>↓ : 빠른 하강</div>
-        <div>↑ : 회전</div>
-        <div>스페이스 : 즉시 하강</div>
-        <div>P : 일시정지</div>
       </div>
     </div>
   );

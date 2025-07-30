@@ -11,7 +11,8 @@ import {
   moveTetromino,
   dropTetromino,
   calculateScore,
-  calculateLevel} from '../utils/tetrisLogic';
+  calculateLevel,
+  calculateHardDropBonus} from '../utils/tetrisLogic';
 
 const initialState: GameState = {
   board: createEmptyBoard(),
@@ -60,11 +61,13 @@ const tetrisSlice = createSlice({
       if (!state.currentPiece || state.gameOver || state.paused) return;
       
       const droppedPiece = dropTetromino(state.currentPiece, state.board);
+      const dropDistance = droppedPiece.position.y - state.currentPiece.position.y;
       const newBoard = placeTetromino(droppedPiece, state.board);
       const { newBoard: clearedBoard, linesCleared } = clearLines(newBoard);
-      const newScore = state.score + calculateScore(linesCleared, state.level);
+      const newScore = state.score + calculateScore(linesCleared, state.level) + calculateHardDropBonus(state.level, dropDistance);
       const newLines = state.lines + linesCleared;
-      const newLevel = calculateLevel(newLines);
+      // 라인이 클리어될 때만 레벨을 자동 계산, 그렇지 않으면 현재 레벨 유지
+      const newLevel = linesCleared > 0 ? calculateLevel(newLines) : state.level;
       
       state.board = clearedBoard;
       state.currentPiece = null;
@@ -85,7 +88,8 @@ const tetrisSlice = createSlice({
         const { newBoard: clearedBoard, linesCleared } = clearLines(newBoard);
         const newScore = state.score + calculateScore(linesCleared, state.level);
         const newLines = state.lines + linesCleared;
-        const newLevel = calculateLevel(newLines);
+        // 라인이 클리어될 때만 레벨을 자동 계산, 그렇지 않으면 현재 레벨 유지
+        const newLevel = linesCleared > 0 ? calculateLevel(newLines) : state.level;
         
         state.board = clearedBoard;
         state.currentPiece = null;
@@ -115,6 +119,11 @@ const tetrisSlice = createSlice({
       if (state.currentPiece && !isValidPosition(state.currentPiece, state.board)) {
         state.gameOver = true;
       }
+    },
+    
+    setLevel: (state, action: PayloadAction<number>) => {
+      const newLevel = Math.max(0, Math.min(29, action.payload));
+      state.level = newLevel;
     }
   }
 });
@@ -127,7 +136,8 @@ export const {
   dropPiece,
   togglePause,
   resetGame,
-  checkGameOver
+  checkGameOver,
+  setLevel
 } = tetrisSlice.actions;
 
 export default tetrisSlice.reducer; 
