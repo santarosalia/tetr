@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, forwardRef } from 'react';
 import * as PIXI from 'pixi.js';
-import { useAppSelector } from '../hooks/redux';
+import { useAppSelector, useAppDispatch } from '../hooks/redux';
 import { TETROMINO_COLORS } from '../constants/tetrominos';
 import { BOARD_WIDTH, BOARD_HEIGHT, BLOCK_SIZE } from '../utils/tetrisLogic';
+import { PhysicsEffects, PhysicsEffectsRef } from './PhysicsEffects';
+import { clearLastPlacedPiece } from '../store/tetrisSlice';
 
 interface TetrisRendererProps {
   width: number;
@@ -12,7 +14,9 @@ interface TetrisRendererProps {
 export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
+  const physicsEffectsRef = useRef<PhysicsEffectsRef>(null);
   const gameState = useAppSelector(state => state.tetris);
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -35,6 +39,26 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
       }
     };
   }, [width, height]);
+
+  // 피스 배치 감지 및 파티클 효과 트리거
+  useEffect(() => {
+    if (gameState.lastPlacedPiece && physicsEffectsRef.current) {
+      // number[][]를 boolean[][]로 변환
+      const booleanShape = gameState.lastPlacedPiece.shape.map(row => 
+        row.map(cell => cell !== 0)
+      );
+      
+      physicsEffectsRef.current.createPieceDropEffect(
+        gameState.lastPlacedPiece.position.x,
+        gameState.lastPlacedPiece.position.y,
+        gameState.lastPlacedPiece.type,
+        booleanShape
+      );
+      
+      // 파티클 효과 트리거 후 lastPlacedPiece 초기화
+      dispatch(clearLastPlacedPiece());
+    }
+  }, [gameState.lastPlacedPiece, dispatch]);
 
   useEffect(() => {
     if (!appRef.current) return;
@@ -156,5 +180,14 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
 
   }, [gameState, width, height]);
 
-  return <div ref={canvasRef} />;
+  return (
+    <div className="relative">
+      <div ref={canvasRef} />
+      <PhysicsEffects
+        width={width}
+        height={height}
+        ref={physicsEffectsRef}
+      />
+    </div>
+  );
 }; 

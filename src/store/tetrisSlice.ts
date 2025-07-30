@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { GameState } from '../types/tetris';
+import { GameState, Tetromino } from '../types/tetris';
 import {
   createEmptyBoard,
   createTetromino,
@@ -14,7 +14,7 @@ import {
   calculateLevel,
   calculateHardDropBonus} from '../utils/tetrisLogic';
 
-const initialState: GameState = {
+const initialState: GameState & { lastPlacedPiece: Tetromino | null } = {
   board: createEmptyBoard(),
   currentPiece: null,
   nextPiece: getRandomTetrominoType(),
@@ -22,7 +22,8 @@ const initialState: GameState = {
   level: 0,
   lines: 0,
   gameOver: false,
-  paused: false
+  paused: false,
+  lastPlacedPiece: null
 };
 
 const tetrisSlice = createSlice({
@@ -69,6 +70,9 @@ const tetrisSlice = createSlice({
       // 라인이 클리어될 때만 레벨을 자동 계산, 그렇지 않으면 현재 레벨 유지
       const newLevel = linesCleared > 0 ? calculateLevel(newLines) : state.level;
       
+      // 배치된 피스 정보 저장
+      state.lastPlacedPiece = droppedPiece;
+      
       state.board = clearedBoard;
       state.currentPiece = null;
       state.score = newScore;
@@ -90,6 +94,9 @@ const tetrisSlice = createSlice({
         const newLines = state.lines + linesCleared;
         // 라인이 클리어될 때만 레벨을 자동 계산, 그렇지 않으면 현재 레벨 유지
         const newLevel = linesCleared > 0 ? calculateLevel(newLines) : state.level;
+        
+        // 배치된 피스 정보 저장
+        state.lastPlacedPiece = state.currentPiece;
         
         state.board = clearedBoard;
         state.currentPiece = null;
@@ -113,6 +120,7 @@ const tetrisSlice = createSlice({
       state.lines = 0;
       state.gameOver = false;
       state.paused = false;
+      state.lastPlacedPiece = null;
     },
     
     checkGameOver: (state) => {
@@ -124,6 +132,10 @@ const tetrisSlice = createSlice({
     setLevel: (state, action: PayloadAction<number>) => {
       const newLevel = Math.max(0, Math.min(29, action.payload));
       state.level = newLevel;
+    },
+    
+    clearLastPlacedPiece: (state) => {
+      state.lastPlacedPiece = null;
     }
   }
 });
@@ -137,7 +149,8 @@ export const {
   togglePause,
   resetGame,
   checkGameOver,
-  setLevel
+  setLevel,
+  clearLastPlacedPiece
 } = tetrisSlice.actions;
 
 export default tetrisSlice.reducer; 
