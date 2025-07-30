@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, forwardRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as PIXI from 'pixi.js';
 import { useAppSelector, useAppDispatch } from '../hooks/redux';
 import { TETROMINO_COLORS } from '../constants/tetrominos';

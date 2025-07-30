@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import Matter from 'matter-js';
 import { BOARD_WIDTH, BOARD_HEIGHT, BLOCK_SIZE } from '../utils/tetrisLogic';
 
@@ -15,9 +15,7 @@ export interface PhysicsEffectsRef {
 
 export const PhysicsEffects = forwardRef<PhysicsEffectsRef, PhysicsEffectsProps>(({ 
   width, 
-  height, 
-  onEffectComplete 
-}, ref) => {
+  height}, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
   const renderRef = useRef<Matter.Render | null>(null);

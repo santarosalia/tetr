@@ -41,8 +41,8 @@ export const GameUI: React.FC = () => {
           style={{
             gridTemplateColumns: `repeat(${cols}, 1fr)`,
             gridTemplateRows: `repeat(${rows}, 1fr)`,
-            width: `${cols * 20}px`,
-            height: `${rows * 20}px`
+            width: '50px',
+            height: '50px'
           }}
         >
           {shape.map((row, y) =>
