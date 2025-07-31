@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppSelector, useAppDispatch } from '../hooks/redux';
 import { TETROMINO_SHAPES } from '../constants/tetrominos';
-import { togglePause, resetGame, setLevel, startGame } from '../store/tetrisSlice';
+import { togglePause, setLevel, startGame } from '../store/tetrisSlice';
 
 // 레벨에 따른 드롭 간격 계산 함수 (useTetrisGame과 동일)
 const calculateDropInterval = (level: number): number => {

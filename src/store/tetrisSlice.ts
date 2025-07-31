@@ -4,7 +4,6 @@ import {
   createEmptyBoard,
   createTetromino,
   getRandomTetrominoType,
-  rotateTetromino,
   rotateTetrominoWithWallKick,
   isValidPosition,
   placeTetromino,
