@@ -5,6 +5,7 @@ import {
   createTetromino,
   getRandomTetrominoType,
   rotateTetromino,
+  rotateTetrominoWithWallKick,
   isValidPosition,
   placeTetromino,
   clearLines,
@@ -66,8 +67,8 @@ const tetrisSlice = createSlice({
     rotatePiece: (state) => {
       if (!state.currentPiece || state.gameOver || state.paused) return;
       
-      const rotatedPiece = rotateTetromino(state.currentPiece);
-      if (isValidPosition(rotatedPiece, state.board)) {
+      const rotatedPiece = rotateTetrominoWithWallKick(state.currentPiece, state.board);
+      if (rotatedPiece) {
         state.currentPiece = rotatedPiece;
       }
     },

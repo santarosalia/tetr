@@ -33,6 +33,45 @@ export function rotateTetromino(tetromino: Tetromino): Tetromino {
   };
 }
 
+export function rotateTetrominoWithWallKick(tetromino: Tetromino, board: number[][]): Tetromino | null {
+  const rotatedPiece = rotateTetromino(tetromino);
+  
+  // 기본 회전이 가능한지 확인
+  if (isValidPosition(rotatedPiece, board)) {
+    return rotatedPiece;
+  }
+  
+  // 벽킥 시도 (좌우 이동)
+  const wallKickOffsets = [
+    { x: -1, y: 0 },  // 왼쪽으로 1칸
+    { x: 1, y: 0 },   // 오른쪽으로 1칸
+    { x: -2, y: 0 },  // 왼쪽으로 2칸
+    { x: 2, y: 0 },   // 오른쪽으로 2칸
+    { x: -1, y: -1 }, // 왼쪽으로 1칸, 위로 1칸
+    { x: 1, y: -1 },  // 오른쪽으로 1칸, 위로 1칸
+    { x: 0, y: -1 },  // 위로 1칸
+    { x: -1, y: 1 },  // 왼쪽으로 1칸, 아래로 1칸
+    { x: 1, y: 1 },   // 오른쪽으로 1칸, 아래로 1칸
+  ];
+  
+  for (const offset of wallKickOffsets) {
+    const kickedPiece = {
+      ...rotatedPiece,
+      position: {
+        x: rotatedPiece.position.x + offset.x,
+        y: rotatedPiece.position.y + offset.y
+      }
+    };
+    
+    if (isValidPosition(kickedPiece, board)) {
+      return kickedPiece;
+    }
+  }
+  
+  // 벽킥이 실패하면 null 반환
+  return null;
+}
+
 export function isValidPosition(
   tetromino: Tetromino,
   board: number[][],
