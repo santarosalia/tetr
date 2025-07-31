@@ -19,7 +19,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
       {/* 테트리스 로고 */}
       <div className="mb-8">
         <h1 className="text-6xl font-bold text-white mb-4 tracking-wider text-center">
-          TETRIS
+          DON'T RIS
         </h1>
         <div className="flex justify-center space-x-2">
           {['I', 'O', 'T', 'S', 'Z', 'J', 'L'].map((type, index) => (
@@ -37,7 +37,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
 
       {/* 게임 설명 */}
       <div className="text-center text-white mb-8">
-        <p className="text-lg mb-2">클래식 테트리스 게임</p>
         <p className="text-sm opacity-80">
           라인을 완성하여 점수를 얻으세요!
         </p>
