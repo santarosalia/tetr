@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppSelector, useAppDispatch } from '../hooks/redux';
 import { TETROMINO_SHAPES } from '../constants/tetrominos';
-import { togglePause, resetGame, setLevel } from '../store/tetrisSlice';
+import { togglePause, resetGame, setLevel, startGame } from '../store/tetrisSlice';
 
 // 레벨에 따른 드롭 간격 계산 함수 (useTetrisGame과 동일)
 const calculateDropInterval = (level: number): number => {
@@ -66,7 +66,7 @@ export const GameUI: React.FC = () => {
   };
 
   const handleReset = () => {
-    dispatch(resetGame());
+    dispatch(startGame());
   };
 
   const handleLevelChange = (newLevel: number) => {
@@ -141,18 +141,18 @@ export const GameUI: React.FC = () => {
       </div>
 
       <div className="mb-5 space-y-2">
-        <button
+        <div
           onClick={handlePause}
-          className="w-full px-4 py-2 bg-gray-600 text-white border-none rounded cursor-pointer text-sm hover:bg-gray-700 transition-colors"
+          className="w-full px-4 py-2 bg-gray-600 text-white border-none rounded cursor-pointer text-sm hover:bg-gray-700 transition-colors text-center"
         >
           {gameState.paused ? '재개' : '일시정지'}
-        </button>
-        <button
+        </div>
+        <div
           onClick={handleReset}
-          className="w-full px-4 py-2 bg-red-600 text-white border-none rounded cursor-pointer text-sm hover:bg-red-700 transition-colors"
+          className="w-full px-4 py-2 bg-red-600 text-white border-none rounded cursor-pointer text-sm hover:bg-red-700 transition-colors text-center"
         >
           새 게임
-        </button>
+        </div>
       </div>
     </div>
   );

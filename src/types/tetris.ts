@@ -21,6 +21,7 @@ export interface GameState {
   lines: number;
   gameOver: boolean;
   paused: boolean;
+  isGameStarted: boolean;
 }
 
 export interface GameConfig {

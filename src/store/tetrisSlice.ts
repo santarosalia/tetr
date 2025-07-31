@@ -14,7 +14,7 @@ import {
   calculateLevel,
   calculateHardDropBonus} from '../utils/tetrisLogic';
 
-const initialState: GameState & { lastPlacedPiece: Tetromino | null } = {
+const initialState: GameState & { lastPlacedPiece: Tetromino | null; isGameStarted: boolean } = {
   board: createEmptyBoard(),
   currentPiece: null,
   nextPiece: getRandomTetrominoType(),
@@ -23,13 +23,27 @@ const initialState: GameState & { lastPlacedPiece: Tetromino | null } = {
   lines: 0,
   gameOver: false,
   paused: false,
-  lastPlacedPiece: null
+  lastPlacedPiece: null,
+  isGameStarted: false
 };
 
 const tetrisSlice = createSlice({
   name: 'tetris',
   initialState,
   reducers: {
+    startGame: (state) => {
+      state.isGameStarted = true;
+      state.board = createEmptyBoard();
+      state.currentPiece = null;
+      state.nextPiece = getRandomTetrominoType();
+      state.score = 0;
+      state.level = 0;
+      state.lines = 0;
+      state.gameOver = false;
+      state.paused = false;
+      state.lastPlacedPiece = null;
+    },
+    
     spawnNewPiece: (state) => {
       const newPiece = createTetromino(state.nextPiece);
       const newNextPiece = getRandomTetrominoType();
@@ -121,6 +135,7 @@ const tetrisSlice = createSlice({
       state.gameOver = false;
       state.paused = false;
       state.lastPlacedPiece = null;
+      state.isGameStarted = false;
     },
     
     checkGameOver: (state) => {
@@ -141,6 +156,7 @@ const tetrisSlice = createSlice({
 });
 
 export const {
+  startGame,
   spawnNewPiece,
   movePiece,
   rotatePiece,
