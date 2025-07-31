@@ -84,6 +84,19 @@
     padding: 1rem;
   }
   
+  .held-piece-panel {
+    position: relative;
+    color: white;
+    font-family: sans-serif;
+    font-size: 1rem;
+    text-align: center;
+    min-width: 100px;
+    background-color: rgb(0 0 0 / 0.5);
+    backdrop-filter: blur(4px);
+    border-radius: 0.5rem;
+    padding: 1rem;
+  }
+  
   .next-piece-container {
     display: flex;
     justify-content: center;
