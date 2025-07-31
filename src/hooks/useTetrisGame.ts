@@ -30,6 +30,10 @@ export const useTetrisGame = () => {
     const dropIntervalRef = useRef<number | null>(null);
     const lastDropTimeRef = useRef<number>(0);
 
+    // 키 반복 시스템을 위한 ref들
+    const keyRepeatRef = useRef<{ [key: string]: number }>({});
+    const keyRepeatTimersRef = useRef<{ [key: string]: NodeJS.Timeout | null }>({});
+
     const handleMovePiece = useCallback(
         (offsetX: number, offsetY: number) => {
             dispatch(movePiece({ offsetX, offsetY }));
@@ -57,6 +61,32 @@ export const useTetrisGame = () => {
         dispatch(resetGame());
     }, [dispatch]);
 
+    // 키 반복 처리 함수
+    const handleKeyRepeat = useCallback(
+        (key: string) => {
+            if (gameState.gameOver || gameState.paused) return;
+
+            switch (key) {
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    handleMovePiece(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    handleMovePiece(1, 0);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    handleMovePiece(0, 1);
+                    break;
+            }
+        },
+        [gameState.gameOver, gameState.paused, handleMovePiece]
+    );
+
     // Handle keyboard input
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -74,21 +104,55 @@ export const useTetrisGame = () => {
                 return;
             }
 
+            // 이미 처리된 키는 무시
+            if (event.repeat) return;
+
             switch (event.key) {
                 case 'ArrowLeft':
                 case 'a':
                 case 'A':
                     handleMovePiece(-1, 0);
+                    // 키 반복 시작
+                    keyRepeatRef.current[event.key] = Date.now();
+                    if (keyRepeatTimersRef.current[event.key]) {
+                        clearTimeout(keyRepeatTimersRef.current[event.key]!);
+                    }
+                    keyRepeatTimersRef.current[event.key] = setTimeout(() => {
+                        const interval = setInterval(() => {
+                            handleKeyRepeat(event.key);
+                        }, 50); // 50ms 간격으로 반복
+                        keyRepeatTimersRef.current[event.key] = interval as any;
+                    }, 50); // 50ms 후 반복 시작
                     break;
                 case 'ArrowRight':
                 case 'd':
                 case 'D':
                     handleMovePiece(1, 0);
+                    keyRepeatRef.current[event.key] = Date.now();
+                    if (keyRepeatTimersRef.current[event.key]) {
+                        clearTimeout(keyRepeatTimersRef.current[event.key]!);
+                    }
+                    keyRepeatTimersRef.current[event.key] = setTimeout(() => {
+                        const interval = setInterval(() => {
+                            handleKeyRepeat(event.key);
+                        }, 50);
+                        keyRepeatTimersRef.current[event.key] = interval as any;
+                    }, 50);
                     break;
                 case 'ArrowDown':
                 case 's':
                 case 'S':
                     handleMovePiece(0, 1);
+                    keyRepeatRef.current[event.key] = Date.now();
+                    if (keyRepeatTimersRef.current[event.key]) {
+                        clearTimeout(keyRepeatTimersRef.current[event.key]!);
+                    }
+                    keyRepeatTimersRef.current[event.key] = setTimeout(() => {
+                        const interval = setInterval(() => {
+                            handleKeyRepeat(event.key);
+                        }, 50);
+                        keyRepeatTimersRef.current[event.key] = interval as any;
+                    }, 50);
                     break;
                 case 'ArrowUp':
                 case 'w':
@@ -110,8 +174,39 @@ export const useTetrisGame = () => {
             }
         };
 
+        const handleKeyUp = (event: KeyboardEvent) => {
+            // 키 반복 중지
+            if (keyRepeatTimersRef.current[event.key]) {
+                if (typeof keyRepeatTimersRef.current[event.key] === 'number') {
+                    clearTimeout(keyRepeatTimersRef.current[event.key]!);
+                } else {
+                    clearInterval(
+                        keyRepeatTimersRef.current[event.key] as NodeJS.Timeout
+                    );
+                }
+                keyRepeatTimersRef.current[event.key] = null;
+            }
+            delete keyRepeatRef.current[event.key];
+        };
+
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+
+            // 컴포넌트 언마운트 시 모든 타이머 정리
+            Object.values(keyRepeatTimersRef.current).forEach((timer) => {
+                if (timer) {
+                    if (typeof timer === 'number') {
+                        clearTimeout(timer);
+                    } else {
+                        clearInterval(timer);
+                    }
+                }
+            });
+        };
     }, [
         handleMovePiece,
         handleRotatePiece,
@@ -119,6 +214,7 @@ export const useTetrisGame = () => {
         handleTogglePause,
         handleHoldPiece,
         handleResetGame,
+        handleKeyRepeat,
         gameState.gameOver,
         gameState.paused,
     ]);
