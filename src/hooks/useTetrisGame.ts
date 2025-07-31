@@ -10,7 +10,6 @@ import {
     resetGame,
     checkGameOver,
     holdPiece,
-    startGame,
 } from '../store/tetrisSlice';
 
 // 레벨에 따른 드롭 간격 계산 함수
