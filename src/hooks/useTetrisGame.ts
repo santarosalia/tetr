@@ -122,7 +122,7 @@ export const useTetrisGame = () => {
                             handleKeyRepeat(event.key);
                         }, 50); // 50ms 간격으로 반복
                         keyRepeatTimersRef.current[event.key] = interval as any;
-                    }, 50); // 50ms 후 반복 시작
+                    }, 100); // 50ms 후 반복 시작
                     break;
                 case 'ArrowRight':
                 case 'd':
@@ -137,7 +137,7 @@ export const useTetrisGame = () => {
                             handleKeyRepeat(event.key);
                         }, 50);
                         keyRepeatTimersRef.current[event.key] = interval as any;
-                    }, 50);
+                    }, 100);
                     break;
                 case 'ArrowDown':
                 case 's':
@@ -152,7 +152,7 @@ export const useTetrisGame = () => {
                             handleKeyRepeat(event.key);
                         }, 50);
                         keyRepeatTimersRef.current[event.key] = interval as any;
-                    }, 50);
+                    }, 100);
                     break;
                 case 'ArrowUp':
                 case 'w':
