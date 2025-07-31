@@ -112,8 +112,6 @@ export const useTetrisGame = () => {
     // Handle keyboard input (데스크톱에서만)
     useEffect(() => {
         // 모바일에서는 키보드 이벤트를 무시
-        const isMobileDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        if (isMobileDevice) return;
 
         const handleKeyDown = (event: KeyboardEvent) => {
             if (gameState.gameOver) {
