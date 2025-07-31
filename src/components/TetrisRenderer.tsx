@@ -138,6 +138,31 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
       app.stage.addChild(pieceGraphics);
     }
 
+    // Draw ghost piece
+    if (gameState.ghostPiece && gameState.currentPiece) {
+      const ghostGraphics = new PIXI.Graphics();
+      const { shape, position } = gameState.ghostPiece;
+
+      for (let y = 0; y < shape.length; y++) {
+        for (let x = 0; x < shape[y].length; x++) {
+          if (shape[y][x]) {
+            const blockX = boardX + (position.x + x) * BLOCK_SIZE;
+            const blockY = boardY + (position.y + y) * BLOCK_SIZE;
+            
+            // 반투명한 회색으로 고스트 블록 그리기
+            ghostGraphics.beginFill(0x888888, 0.3);
+            ghostGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+            ghostGraphics.endFill();
+            
+            // 테두리는 더 진한 회색으로
+            ghostGraphics.lineStyle(1, 0x666666, 0.5);
+            ghostGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+          }
+        }
+      }
+      app.stage.addChild(ghostGraphics);
+    }
+
     // Draw game over overlay
     if (gameState.gameOver) {
       const overlay = new PIXI.Graphics();

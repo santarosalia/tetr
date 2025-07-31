@@ -22,6 +22,7 @@ export interface GameState {
   gameOver: boolean;
   paused: boolean;
   isGameStarted: boolean;
+  ghostPiece: Tetromino | null;
 }
 
 export interface GameConfig {

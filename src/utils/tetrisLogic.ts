@@ -192,4 +192,19 @@ export function calculateLevel(lines: number): number {
 
 export function isGameOver(board: number[][]): boolean {
   return board[0].some(cell => cell === 1);
+}
+
+export function getGhostPiece(tetromino: Tetromino, board: number[][]): Tetromino {
+  // 현재 피스의 떨어질 위치를 계산
+  let ghostPosition = { ...tetromino.position };
+  
+  // 아래로 이동할 수 있는 최대 거리를 찾음
+  while (isValidPosition(tetromino, board, 0, ghostPosition.y - tetromino.position.y + 1)) {
+    ghostPosition.y++;
+  }
+  
+  return {
+    ...tetromino,
+    position: ghostPosition
+  };
 } 

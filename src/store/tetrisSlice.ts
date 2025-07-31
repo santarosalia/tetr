@@ -13,9 +13,10 @@ import {
   dropTetromino,
   calculateScore,
   calculateLevel,
-  calculateHardDropBonus} from '../utils/tetrisLogic';
+  calculateHardDropBonus,
+  getGhostPiece} from '../utils/tetrisLogic';
 
-const initialState: GameState & { lastPlacedPiece: Tetromino | null; isGameStarted: boolean } = {
+const initialState: GameState & { lastPlacedPiece: Tetromino | null; isGameStarted: boolean; ghostPiece: Tetromino | null } = {
   board: createEmptyBoard(),
   currentPiece: null,
   nextPiece: getRandomTetrominoType(),
@@ -25,7 +26,8 @@ const initialState: GameState & { lastPlacedPiece: Tetromino | null; isGameStart
   gameOver: false,
   paused: false,
   lastPlacedPiece: null,
-  isGameStarted: false
+  isGameStarted: false,
+  ghostPiece: null
 };
 
 const tetrisSlice = createSlice({
@@ -43,6 +45,7 @@ const tetrisSlice = createSlice({
       state.gameOver = false;
       state.paused = false;
       state.lastPlacedPiece = null;
+      state.ghostPiece = null;
     },
     
     spawnNewPiece: (state) => {
@@ -51,6 +54,8 @@ const tetrisSlice = createSlice({
       
       state.currentPiece = newPiece;
       state.nextPiece = newNextPiece;
+      // 고스트 블록 업데이트
+      state.ghostPiece = getGhostPiece(newPiece, state.board);
     },
     
     movePiece: (state, action: PayloadAction<{ offsetX: number; offsetY: number }>) => {
@@ -61,6 +66,8 @@ const tetrisSlice = createSlice({
       
       if (movedPiece) {
         state.currentPiece = movedPiece;
+        // 고스트 블록 업데이트
+        state.ghostPiece = getGhostPiece(movedPiece, state.board);
       }
     },
     
@@ -70,6 +77,8 @@ const tetrisSlice = createSlice({
       const rotatedPiece = rotateTetrominoWithWallKick(state.currentPiece, state.board);
       if (rotatedPiece) {
         state.currentPiece = rotatedPiece;
+        // 고스트 블록 업데이트
+        state.ghostPiece = getGhostPiece(rotatedPiece, state.board);
       }
     },
     
@@ -90,6 +99,7 @@ const tetrisSlice = createSlice({
       
       state.board = clearedBoard;
       state.currentPiece = null;
+      state.ghostPiece = null;
       state.score = newScore;
       state.level = newLevel;
       state.lines = newLines;
@@ -101,6 +111,8 @@ const tetrisSlice = createSlice({
       const movedPiece = moveTetromino(state.currentPiece, state.board, 0, 1);
       if (movedPiece) {
         state.currentPiece = movedPiece;
+        // 고스트 블록 업데이트
+        state.ghostPiece = getGhostPiece(movedPiece, state.board);
       } else {
         // Piece can't move down, place it
         const newBoard = placeTetromino(state.currentPiece, state.board);
@@ -115,6 +127,7 @@ const tetrisSlice = createSlice({
         
         state.board = clearedBoard;
         state.currentPiece = null;
+        state.ghostPiece = null;
         state.score = newScore;
         state.level = newLevel;
         state.lines = newLines;
@@ -137,6 +150,7 @@ const tetrisSlice = createSlice({
       state.paused = false;
       state.lastPlacedPiece = null;
       state.isGameStarted = false;
+      state.ghostPiece = null;
     },
     
     checkGameOver: (state) => {
