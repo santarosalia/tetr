@@ -11,16 +11,38 @@ import {
     checkGameOver,
     holdPiece,
 } from '../store/tetrisSlice';
+import { isValidPosition } from '../utils/tetrisLogic';
 
 // 레벨에 따른 드롭 간격 계산 함수
-const calculateDropInterval = (level: number): number => {
+const calculateDistanceToBottom = (piece: any, board: number[][]): number => {
+    if (!piece) return 0;
+
+    let distance = 0;
+
+    // 아래로 이동할 수 있는 최대 거리를 찾음
+    while (isValidPosition(piece, board, 0, distance + 1)) {
+        distance++;
+    }
+    console.log(distance);
+    return distance;
+};
+
+// calculateDropInterval 함수 수정
+const calculateDropInterval = (level: number, distanceToBottom: number = 0): number => {
     // 표준 테트리스 속도 공식: (0.8 - ((level - 1) * 0.007))^(level - 1) * 1000
     // 최소 50ms, 최대 1000ms
     if (level <= 0) return 1000;
     if (level >= 29) return 50;
 
     const baseInterval = Math.pow(0.8 - (level - 1) * 0.007, level - 1) * 1000;
-    return Math.max(50, Math.min(1000, baseInterval));
+    let interval = Math.max(50, Math.min(1000, baseInterval));
+
+    // 바닥까지의 거리가 0이면 인터벌을 늘림 (더 천천히 떨어지도록)
+    if (distanceToBottom === 0) {
+        interval = Math.min(1000); // 1초로 고정
+    }
+
+    return interval;
 };
 
 export const useTetrisGame = () => {
@@ -228,8 +250,12 @@ export const useTetrisGame = () => {
                 lastDropTimeRef.current = timestamp;
             }
 
-            const dropInterval = calculateDropInterval(gameState.level);
-
+            // 현재 피스의 바닥까지의 거리 계산
+            const distanceToBottom = calculateDistanceToBottom(
+                gameState.currentPiece,
+                gameState.board
+            );
+            const dropInterval = calculateDropInterval(gameState.level, distanceToBottom);
             if (timestamp - lastDropTimeRef.current > dropInterval) {
                 dispatch(dropPiece());
                 lastDropTimeRef.current = timestamp;
@@ -245,7 +271,14 @@ export const useTetrisGame = () => {
                 cancelAnimationFrame(dropIntervalRef.current);
             }
         };
-    }, [dispatch, gameState.gameOver, gameState.paused, gameState.level]);
+    }, [
+        dispatch,
+        gameState.gameOver,
+        gameState.paused,
+        gameState.level,
+        gameState.currentPiece,
+        gameState.board,
+    ]);
 
     // Spawn new piece when current piece is null
     useEffect(() => {

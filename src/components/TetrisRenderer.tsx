@@ -7,212 +7,364 @@ import { PhysicsEffects, PhysicsEffectsRef } from './PhysicsEffects';
 import { clearLastPlacedPiece } from '../store/tetrisSlice';
 
 interface TetrisRendererProps {
-  width: number;
-  height: number;
+    width: number;
+    height: number;
 }
 
 export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height }) => {
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const appRef = useRef<PIXI.Application | null>(null);
-  const physicsEffectsRef = useRef<PhysicsEffectsRef>(null);
-  const gameState = useAppSelector(state => state.tetris);
-  const dispatch = useAppDispatch();
+    const canvasRef = useRef<HTMLDivElement>(null);
+    const appRef = useRef<PIXI.Application | null>(null);
+    const physicsEffectsRef = useRef<PhysicsEffectsRef>(null);
+    const gameState = useAppSelector((state) => state.tetris);
+    const dispatch = useAppDispatch();
+    const animationRef = useRef<number | null>(null);
+    const timeRef = useRef<number>(0);
 
-  useEffect(() => {
-    if (!canvasRef.current) return;
+    useEffect(() => {
+        if (!canvasRef.current) return;
 
-    // Create PIXI application
-    const app = new PIXI.Application({
-      width,
-      height,
-      backgroundColor: 0x000000,
-      antialias: true,
-    });
+        // Create PIXI application
+        const app = new PIXI.Application({
+            width,
+            height,
+            antialias: true,
+        });
 
-    canvasRef.current.appendChild(app.view as HTMLCanvasElement);
-    appRef.current = app;
+        canvasRef.current.appendChild(app.view as HTMLCanvasElement);
+        appRef.current = app;
 
-    return () => {
-      if (appRef.current) {
-        appRef.current.destroy(true);
-        appRef.current = null;
-      }
+        return () => {
+            if (appRef.current) {
+                appRef.current.destroy(true);
+                appRef.current = null;
+            }
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+            }
+        };
+    }, [width, height]);
+
+    // 피스 배치 감지 및 파티클 효과 트리거
+    useEffect(() => {
+        if (gameState.lastPlacedPiece && physicsEffectsRef.current) {
+            // number[][]를 boolean[][]로 변환
+            const booleanShape = gameState.lastPlacedPiece.shape.map((row) =>
+                row.map((cell) => cell !== 0)
+            );
+
+            physicsEffectsRef.current.createPieceDropEffect(
+                gameState.lastPlacedPiece.position.x,
+                gameState.lastPlacedPiece.position.y,
+                gameState.lastPlacedPiece.type,
+                booleanShape
+            );
+
+            // 파티클 효과 트리거 후 lastPlacedPiece 초기화
+            dispatch(clearLastPlacedPiece());
+        }
+    }, [gameState.lastPlacedPiece, dispatch]);
+
+    // 배경 애니메이션 함수
+    const animateBackground = (time: number) => {
+        if (!appRef.current) return;
+
+        const app = appRef.current;
+        timeRef.current = time * 0.001; // 초 단위로 변환
+
+        // 기존 배경 제거
+        const existingBackground = app.stage.children.find(
+            (child) => child.name === 'animatedBackground'
+        );
+        if (existingBackground) {
+            app.stage.removeChild(existingBackground);
+        }
+
+        // 새로운 배경 생성
+        const background = new PIXI.Graphics();
+        background.name = 'animatedBackground';
+
+        // 좌에서 우로 흐르는 형형색색 그라데이션
+        const segments = 200; // 더 많은 세그먼트로 부드러운 그라데이션
+        for (let i = 0; i <= segments; i++) {
+            const progress = i / segments;
+
+            // 시간에 따라 변하는 색상들 (형형색색)
+            const hue1 = (timeRef.current * 0.1 + 0.2) % 1; // 빨강-주황
+            const hue2 = (timeRef.current * 0.1 + 0.2) % 1; // 주황-노랑
+            const hue3 = (timeRef.current * 0.1 + 0.2) % 1; // 노랑-초록
+            const hue4 = (timeRef.current * 0.1 + 0.2) % 1; // 초록-파랑
+
+            // HSL을 RGB로 변환하는 함수
+            const hslToRgb = (
+                h: number,
+                s: number,
+                l: number
+            ): [number, number, number] => {
+                const hue = h * 360;
+                const sat = s * 100;
+                const light = l * 100;
+
+                const c = ((1 - Math.abs((2 * light) / 100 - 1)) * sat) / 100;
+                const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+                const m = light / 100 - c / 2;
+
+                let r = 0,
+                    g = 0,
+                    b = 0;
+
+                if (hue < 60) {
+                    r = c;
+                    g = x;
+                    b = 0;
+                } else if (hue < 120) {
+                    r = x;
+                    g = c;
+                    b = 0;
+                } else if (hue < 180) {
+                    r = 0;
+                    g = c;
+                    b = x;
+                } else if (hue < 240) {
+                    r = 0;
+                    g = x;
+                    b = c;
+                } else if (hue < 300) {
+                    r = x;
+                    g = 0;
+                    b = c;
+                } else {
+                    r = c;
+                    g = 0;
+                    b = x;
+                }
+
+                return [
+                    Math.round((r + m) * 255),
+                    Math.round((g + m) * 255),
+                    Math.round((b + m) * 255),
+                ];
+            };
+
+            // 현재 위치에 따른 색상 계산
+            let currentColor;
+            if (progress < 0.25) {
+                const t = progress / 0.25;
+                const color1 = hslToRgb(hue1, 0.9, 0.2);
+                const color2 = hslToRgb(hue2, 0.9, 0.2);
+                const r = Math.round(color1[0] * (1 - t) + color2[0] * t);
+                const g = Math.round(color1[1] * (1 - t) + color2[1] * t);
+                const b = Math.round(color1[2] * (1 - t) + color2[2] * t);
+                currentColor = (r << 16) | (g << 8) | b;
+            } else if (progress < 0.5) {
+                const t = (progress - 0.25) / 0.25;
+                const color2 = hslToRgb(hue2, 0.9, 0.2);
+                const color3 = hslToRgb(hue3, 0.9, 0.2);
+                const r = Math.round(color2[0] * (1 - t) + color3[0] * t);
+                const g = Math.round(color2[1] * (1 - t) + color3[1] * t);
+                const b = Math.round(color2[2] * (1 - t) + color3[2] * t);
+                currentColor = (r << 16) | (g << 8) | b;
+            } else if (progress < 0.75) {
+                const t = (progress - 0.5) / 0.25;
+                const color3 = hslToRgb(hue3, 0.9, 0.2);
+                const color4 = hslToRgb(hue4, 0.9, 0.2);
+                const r = Math.round(color3[0] * (1 - t) + color4[0] * t);
+                const g = Math.round(color3[1] * (1 - t) + color4[1] * t);
+                const b = Math.round(color3[2] * (1 - t) + color4[2] * t);
+                currentColor = (r << 16) | (g << 8) | b;
+            } else {
+                const t = (progress - 0.75) / 0.25;
+                const color4 = hslToRgb(hue4, 0.9, 0.2);
+                const color1 = hslToRgb(hue1, 0.9, 0.2);
+                const r = Math.round(color4[0] * (1 - t) + color1[0] * t);
+                const g = Math.round(color4[1] * (1 - t) + color1[1] * t);
+                const b = Math.round(color4[2] * (1 - t) + color1[2] * t);
+                currentColor = (r << 16) | (g << 8) | b;
+            }
+
+            const x = (width / segments) * i;
+            const nextX = (width / segments) * (i + 1);
+
+            background.beginFill(currentColor);
+            background.drawRect(x, 0, nextX - x, height);
+            background.endFill();
+        }
+
+        // 배경을 맨 뒤로 보내기
+        app.stage.addChildAt(background, 0);
+
+        animationRef.current = requestAnimationFrame(animateBackground);
     };
-  }, [width, height]);
 
-  // 피스 배치 감지 및 파티클 효과 트리거
-  useEffect(() => {
-    if (gameState.lastPlacedPiece && physicsEffectsRef.current) {
-      // number[][]를 boolean[][]로 변환
-      const booleanShape = gameState.lastPlacedPiece.shape.map(row => 
-        row.map(cell => cell !== 0)
-      );
-      
-      physicsEffectsRef.current.createPieceDropEffect(
-        gameState.lastPlacedPiece.position.x,
-        gameState.lastPlacedPiece.position.y,
-        gameState.lastPlacedPiece.type,
-        booleanShape
-      );
-      
-      // 파티클 효과 트리거 후 lastPlacedPiece 초기화
-      dispatch(clearLastPlacedPiece());
-    }
-  }, [gameState.lastPlacedPiece, dispatch]);
-
-  useEffect(() => {
-    if (!appRef.current) return;
-
-    const app = appRef.current;
-    app.stage.removeChildren();
-
-    // Create background
-    const background = new PIXI.Graphics();
-    background.beginFill(0x111111);
-    background.drawRect(0, 0, width, height);
-    background.endFill();
-    app.stage.addChild(background);
-
-    // Draw board
-    const boardGraphics = new PIXI.Graphics();
-    const boardX = (width - BOARD_WIDTH * BLOCK_SIZE) / 2;
-    const boardY = (height - BOARD_HEIGHT * BLOCK_SIZE) / 2;
-
-    // Draw board background
-    boardGraphics.beginFill(0x222222);
-    boardGraphics.drawRect(boardX, boardY, BOARD_WIDTH * BLOCK_SIZE, BOARD_HEIGHT * BLOCK_SIZE);
-    boardGraphics.endFill();
-
-    // Draw board grid
-    boardGraphics.lineStyle(1, 0x333333);
-    for (let x = 0; x <= BOARD_WIDTH; x++) {
-      boardGraphics.moveTo(boardX + x * BLOCK_SIZE, boardY);
-      boardGraphics.lineTo(boardX + x * BLOCK_SIZE, boardY + BOARD_HEIGHT * BLOCK_SIZE);
-    }
-    for (let y = 0; y <= BOARD_HEIGHT; y++) {
-      boardGraphics.moveTo(boardX, boardY + y * BLOCK_SIZE);
-      boardGraphics.lineTo(boardX + BOARD_WIDTH * BLOCK_SIZE, boardY + y * BLOCK_SIZE);
-    }
-    app.stage.addChild(boardGraphics);
-
-    // Draw placed blocks
-    const blocksGraphics = new PIXI.Graphics();
-    for (let y = 0; y < BOARD_HEIGHT; y++) {
-      for (let x = 0; x < BOARD_WIDTH; x++) {
-        if (gameState.board[y][x]) {
-          const blockX = boardX + x * BLOCK_SIZE;
-          const blockY = boardY + y * BLOCK_SIZE;
-          
-          blocksGraphics.beginFill(0x666666);
-          blocksGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
-          blocksGraphics.endFill();
-          
-          blocksGraphics.lineStyle(1, 0x888888);
-          blocksGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+    // 배경 애니메이션 시작
+    useEffect(() => {
+        if (appRef.current) {
+            animationRef.current = requestAnimationFrame(animateBackground);
         }
-      }
-    }
-    app.stage.addChild(blocksGraphics);
 
-    // Draw current piece
-    if (gameState.currentPiece) {
-      const pieceGraphics = new PIXI.Graphics();
-      const { shape, position } = gameState.currentPiece;
-      const color = TETROMINO_COLORS[gameState.currentPiece.type];
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+            }
+        };
+    }, [width, height]);
 
-      for (let y = 0; y < shape.length; y++) {
-        for (let x = 0; x < shape[y].length; x++) {
-          if (shape[y][x]) {
-            const blockX = boardX + (position.x + x) * BLOCK_SIZE;
-            const blockY = boardY + (position.y + y) * BLOCK_SIZE;
-            
-            pieceGraphics.beginFill(color);
-            pieceGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
-            pieceGraphics.endFill();
-            
-            pieceGraphics.lineStyle(1, 0xffffff);
-            pieceGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
-          }
+    useEffect(() => {
+        if (!appRef.current) return;
+
+        const app = appRef.current;
+
+        // 배경을 제외한 모든 자식 요소 제거
+        const childrenToRemove = app.stage.children.filter(
+            (child) => child.name !== 'animatedBackground'
+        );
+        childrenToRemove.forEach((child) => app.stage.removeChild(child));
+
+        // Draw board
+        const boardGraphics = new PIXI.Graphics();
+        const boardX = (width - BOARD_WIDTH * BLOCK_SIZE) / 2;
+        const boardY = (height - BOARD_HEIGHT * BLOCK_SIZE) / 2;
+
+        // Draw board background with transparency
+        boardGraphics.beginFill(0x222222, 0.8);
+        boardGraphics.drawRect(
+            boardX,
+            boardY,
+            BOARD_WIDTH * BLOCK_SIZE,
+            BOARD_HEIGHT * BLOCK_SIZE
+        );
+        boardGraphics.endFill();
+
+        // Draw board grid
+        boardGraphics.lineStyle(1, 'white');
+        for (let x = 0; x <= BOARD_WIDTH; x++) {
+            boardGraphics.moveTo(boardX + x * BLOCK_SIZE, boardY);
+            boardGraphics.lineTo(
+                boardX + x * BLOCK_SIZE,
+                boardY + BOARD_HEIGHT * BLOCK_SIZE
+            );
         }
-      }
-      app.stage.addChild(pieceGraphics);
-    }
-
-    // Draw ghost piece
-    if (gameState.ghostPiece && gameState.currentPiece) {
-      const ghostGraphics = new PIXI.Graphics();
-      const { shape, position } = gameState.ghostPiece;
-
-      for (let y = 0; y < shape.length; y++) {
-        for (let x = 0; x < shape[y].length; x++) {
-          if (shape[y][x]) {
-            const blockX = boardX + (position.x + x) * BLOCK_SIZE;
-            const blockY = boardY + (position.y + y) * BLOCK_SIZE;
-            
-            // 반투명한 회색으로 고스트 블록 그리기
-            ghostGraphics.beginFill(0x888888, 0.3);
-            ghostGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
-            ghostGraphics.endFill();
-            
-            // 테두리는 더 진한 회색으로
-            ghostGraphics.lineStyle(1, 0x666666, 0.5);
-            ghostGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
-          }
+        for (let y = 0; y <= BOARD_HEIGHT; y++) {
+            boardGraphics.moveTo(boardX, boardY + y * BLOCK_SIZE);
+            boardGraphics.lineTo(
+                boardX + BOARD_WIDTH * BLOCK_SIZE,
+                boardY + y * BLOCK_SIZE
+            );
         }
-      }
-      app.stage.addChild(ghostGraphics);
-    }
+        app.stage.addChild(boardGraphics);
 
-    // Draw game over overlay
-    if (gameState.gameOver) {
-      const overlay = new PIXI.Graphics();
-      overlay.beginFill(0x000000, 0.8);
-      overlay.drawRect(0, 0, width, height);
-      overlay.endFill();
-      app.stage.addChild(overlay);
+        // Draw placed blocks
+        const blocksGraphics = new PIXI.Graphics();
+        for (let y = 0; y < BOARD_HEIGHT; y++) {
+            for (let x = 0; x < BOARD_WIDTH; x++) {
+                if (gameState.board[y][x]) {
+                    const blockX = boardX + x * BLOCK_SIZE;
+                    const blockY = boardY + y * BLOCK_SIZE;
 
-      const gameOverText = new PIXI.Text('게임 오버', {
-        fontFamily: 'Arial',
-        fontSize: 48,
-        fill: 0xff0000,
-        align: 'center',
-      });
-      gameOverText.anchor.set(0.5);
-      gameOverText.x = width / 2;
-      gameOverText.y = height / 2;
-      app.stage.addChild(gameOverText);
-    }
+                    blocksGraphics.beginFill(0x666666);
+                    blocksGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+                    blocksGraphics.endFill();
 
-    // Draw pause overlay
-    if (gameState.paused && !gameState.gameOver) {
-      const overlay = new PIXI.Graphics();
-      overlay.beginFill(0x000000, 0.5);
-      overlay.drawRect(0, 0, width, height);
-      overlay.endFill();
-      app.stage.addChild(overlay);
+                    blocksGraphics.lineStyle(1, 0x888888);
+                    blocksGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+                }
+            }
+        }
+        app.stage.addChild(blocksGraphics);
 
-      const pauseText = new PIXI.Text('일시정지', {
-        fontFamily: 'Arial',
-        fontSize: 36,
-        fill: 0xffffff,
-        align: 'center',
-      });
-      pauseText.anchor.set(0.5);
-      pauseText.x = width / 2;
-      pauseText.y = height / 2;
-      app.stage.addChild(pauseText);
-    }
+        // Draw current piece
+        if (gameState.currentPiece) {
+            const pieceGraphics = new PIXI.Graphics();
+            const { shape, position } = gameState.currentPiece;
+            const color = TETROMINO_COLORS[gameState.currentPiece.type];
 
-  }, [gameState, width, height]);
+            for (let y = 0; y < shape.length; y++) {
+                for (let x = 0; x < shape[y].length; x++) {
+                    if (shape[y][x]) {
+                        const blockX = boardX + (position.x + x) * BLOCK_SIZE;
+                        const blockY = boardY + (position.y + y) * BLOCK_SIZE;
 
-  return (
-    <div className="relative">
-      <div ref={canvasRef} />
-      <PhysicsEffects
-        width={width}
-        height={height}
-        ref={physicsEffectsRef}
-      />
-    </div>
-  );
-}; 
+                        pieceGraphics.beginFill(color);
+                        pieceGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+                        pieceGraphics.endFill();
+
+                        pieceGraphics.lineStyle(1, 0xffffff);
+                        pieceGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+            app.stage.addChild(pieceGraphics);
+        }
+
+        // Draw ghost piece
+        if (gameState.ghostPiece && gameState.currentPiece) {
+            const ghostGraphics = new PIXI.Graphics();
+            const { shape, position } = gameState.ghostPiece;
+
+            for (let y = 0; y < shape.length; y++) {
+                for (let x = 0; x < shape[y].length; x++) {
+                    if (shape[y][x]) {
+                        const blockX = boardX + (position.x + x) * BLOCK_SIZE;
+                        const blockY = boardY + (position.y + y) * BLOCK_SIZE;
+
+                        // 반투명한 회색으로 고스트 블록 그리기
+                        ghostGraphics.beginFill(0x888888, 0.3);
+                        ghostGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+                        ghostGraphics.endFill();
+
+                        // 테두리는 더 진한 회색으로
+                        ghostGraphics.lineStyle(1, 0x666666, 0.5);
+                        ghostGraphics.drawRect(blockX, blockY, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+            app.stage.addChild(ghostGraphics);
+        }
+
+        // Draw game over overlay
+        if (gameState.gameOver) {
+            const overlay = new PIXI.Graphics();
+            overlay.beginFill(0x000000, 0.8);
+            overlay.drawRect(0, 0, width, height);
+            overlay.endFill();
+            app.stage.addChild(overlay);
+
+            const gameOverText = new PIXI.Text('게임 오버', {
+                fontFamily: 'Arial',
+                fontSize: 48,
+                fill: 0xff0000,
+                align: 'center',
+            });
+            gameOverText.anchor.set(0.5);
+            gameOverText.x = width / 2;
+            gameOverText.y = height / 2;
+            app.stage.addChild(gameOverText);
+        }
+
+        // Draw pause overlay
+        if (gameState.paused && !gameState.gameOver) {
+            const overlay = new PIXI.Graphics();
+            overlay.beginFill(0x000000, 0.5);
+            overlay.drawRect(0, 0, width, height);
+            overlay.endFill();
+            app.stage.addChild(overlay);
+
+            const pauseText = new PIXI.Text('일시정지', {
+                fontFamily: 'Arial',
+                fontSize: 36,
+                fill: 0xffffff,
+                align: 'center',
+            });
+            pauseText.anchor.set(0.5);
+            pauseText.x = width / 2;
+            pauseText.y = height / 2;
+            app.stage.addChild(pauseText);
+        }
+    }, [gameState, width, height]);
+
+    return (
+        <div className="relative">
+            <div ref={canvasRef} />
+            <PhysicsEffects width={width} height={height} ref={physicsEffectsRef} />
+        </div>
+    );
+};
