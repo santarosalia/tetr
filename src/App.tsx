@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { TetrisRenderer } from './components/TetrisRenderer';
-import { GameUI, HeldPiece } from './components/GameUI';
+import { GameUI, HeldPiece, NextPiece } from './components/GameUI';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
+import { TouchControls } from './components/TouchControls';
 import { useTetrisGame } from './hooks/useTetrisGame';
 import { RootState } from './store';
 import { startGame } from './store/tetrisSlice';
+import { isMobile, isPortrait, getScreenSize } from './utils/mobileDetection';
 
 const GAME_WIDTH = 300;
 const GAME_HEIGHT = 600;
@@ -21,6 +23,10 @@ function App() {
     const { isGameStarted, gameOver, score, level, lines } = gameState;
     const dispatch = useDispatch();
 
+    const [isMobileDevice, setIsMobileDevice] = useState(false);
+    const [isPortraitMode, setIsPortraitMode] = useState(false);
+    const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>('large');
+
     const [windowSize, setWindowSize] = useState({
         width: GAME_WIDTH + UI_PANEL_WIDTH + HELD_PIECE_WIDTH + 40, // 전체 컨테이너 너비
         height: GAME_HEIGHT,
@@ -28,17 +34,33 @@ function App() {
 
     useEffect(() => {
         const handleResize = () => {
-            const totalWidth = GAME_WIDTH + UI_PANEL_WIDTH + HELD_PIECE_WIDTH + 40;
-            const maxWidth = Math.min(window.innerWidth - 40, totalWidth);
-            const maxHeight = Math.min(window.innerHeight - 40, GAME_HEIGHT);
+            // 모바일 감지
+            setIsMobileDevice(isMobile());
+            setIsPortraitMode(isPortrait());
+            setScreenSize(getScreenSize());
 
-            // 전체 컨테이너가 화면보다 클 경우 비율에 맞게 조정
-            const scale = Math.min(maxWidth / totalWidth, maxHeight / GAME_HEIGHT);
+            if (isMobile()) {
+                // 모바일에서는 게임 영역을 화면에 맞게 조정
+                const mobileGameWidth = Math.min(window.innerWidth - 20, 300);
+                const mobileGameHeight = Math.min(window.innerHeight - 200, 600); // 터치 컨트롤 공간 확보
 
-            setWindowSize({
-                width: Math.floor(totalWidth * scale),
-                height: Math.floor(GAME_HEIGHT * scale),
-            });
+                setWindowSize({
+                    width: mobileGameWidth,
+                    height: mobileGameHeight,
+                });
+            } else {
+                // 데스크톱에서는 기존 로직 사용
+                const totalWidth = GAME_WIDTH + UI_PANEL_WIDTH + HELD_PIECE_WIDTH + 40;
+                const maxWidth = Math.min(window.innerWidth - 40, totalWidth);
+                const maxHeight = Math.min(window.innerHeight - 40, GAME_HEIGHT);
+
+                const scale = Math.min(maxWidth / totalWidth, maxHeight / GAME_HEIGHT);
+
+                setWindowSize({
+                    width: Math.floor(totalWidth * scale),
+                    height: Math.floor(GAME_HEIGHT * scale),
+                });
+            }
         };
 
         handleResize();
@@ -66,32 +88,69 @@ function App() {
                     onRestart={handleGameRestart}
                 />
             ) : (
-                <div
-                    className="game-container flex items-center justify-center"
-                    style={{
-                        width: windowSize.width,
-                        height: windowSize.height,
-                    }}
-                >
-                    {/* 왼쪽 보유 블록 패널 */}
-                    <div
-                        className="flex-shrink-0 h-full"
-                        style={{ width: HELD_PIECE_WIDTH }}
-                    >
-                        <HeldPiece />
-                    </div>
+                <>
+                    {isMobileDevice ? (
+                        // 모바일 레이아웃
+                        <div className="w-full h-full flex flex-col items-center justify-center relative">
+                            {/* 게임 영역 */}
+                            <div className="flex-shrink-0">
+                                <TetrisRenderer
+                                    width={windowSize.width}
+                                    height={windowSize.height}
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        // 데스크톱 레이아웃
+                        <div
+                            className="game-container flex items-center justify-center"
+                            style={{
+                                width: windowSize.width,
+                                height: windowSize.height,
+                            }}
+                        >
+                            {/* 왼쪽 보유 블록 패널 */}
+                            <div
+                                className="flex-shrink-0 h-full"
+                                style={{ width: HELD_PIECE_WIDTH }}
+                            >
+                                <HeldPiece />
+                            </div>
 
-                    {/* 중앙 게임 영역 */}
-                    <div className="flex-shrink-0 mx-4">
-                        <TetrisRenderer width={GAME_WIDTH} height={GAME_HEIGHT} />
-                    </div>
+                            {/* 중앙 게임 영역 */}
+                            <div className="flex-shrink-0 mx-4">
+                                <TetrisRenderer width={GAME_WIDTH} height={GAME_HEIGHT} />
+                            </div>
 
-                    {/* 오른쪽 UI 패널 */}
-                    <div className="flex-shrink-0" style={{ width: UI_PANEL_WIDTH }}>
-                        <GameUI />
-                    </div>
-                </div>
+                            {/* 오른쪽 UI 패널 */}
+                            <div
+                                className="flex-shrink-0"
+                                style={{ width: UI_PANEL_WIDTH }}
+                            >
+                                <GameUI />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 모바일에서 보유 블록과 다음 블록을 캔버스 바깥에 표시 */}
+                    {isMobileDevice && isGameStarted && !gameOver && (
+                        <>
+                            {/* 보유 블록 - 좌상단 */}
+                            <div className="fixed top-4 left-4 z-20">
+                                <HeldPiece />
+                            </div>
+
+                            {/* 다음 블록 - 우상단 */}
+                            <div className="fixed top-4 right-4 z-20">
+                                <NextPiece />
+                            </div>
+                        </>
+                    )}
+                </>
             )}
+
+            {/* 터치 컨트롤 (모바일에서만 표시) */}
+            <TouchControls isVisible={isMobileDevice && isGameStarted && !gameOver} />
         </div>
     );
 }

@@ -1,149 +1,183 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
-  
-  html, body {
-    margin: 0;
-    padding: 0;
-  }
-  
-  body {
-    background-color: black;
-    color: white;
-    font-family: sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    margin: 0;
-  }
-  
-  button {
-    font-family: sans-serif;
-  }
+    * {
+        box-sizing: border-box;
+    }
+
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background-color: black;
+        color: white;
+        font-family: sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        margin: 0;
+    }
+
+    button {
+        font-family: sans-serif;
+    }
 }
 
 @layer components {
-  .btn {
-    border-radius: 0.5rem;
-    border: 1px solid transparent;
-    padding: 0.75rem 1.25rem;
-    font-size: 1rem;
-    font-weight: 500;
-    background-color: rgb(31 41 55);
-    color: white;
-    cursor: pointer;
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
-  }
-  
-  .btn:hover {
-    border-color: rgb(59 130 246);
-  }
-  
-  .btn:focus {
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-  }
-  
-  .btn:focus-visible {
-    box-shadow: 0 0 0 4px rgb(59 130 246 / 0.2);
-  }
-  
-  .btn-light {
-    background-color: rgb(243 244 246);
-    color: rgb(17 24 39);
-  }
-  
-  .btn-light:hover {
-    border-color: rgb(59 130 246);
-  }
-  
-  .game-container {
-    position: relative;
-    background-color: rgb(17 24 39);
-    border: 2px solid rgb(75 85 99);
-    border-radius: 0.5rem;
-    overflow: hidden;
-  }
-  
-  .ui-panel {
-    position: relative;
-    color: white;
-    font-family: sans-serif;
-    font-size: 1rem;
-    text-align: left;
-    min-width: 200px;
-    background-color: rgb(0 0 0 / 0.5);
-    backdrop-filter: blur(4px);
-    border-radius: 0.5rem;
-    padding: 1rem;
-  }
-  
-  .held-piece-panel {
-    position: relative;
-    color: white;
-    font-family: sans-serif;
-    font-size: 1rem;
-    text-align: center;
-    min-width: 100px;
-    background-color: rgb(0 0 0 / 0.5);
-    backdrop-filter: blur(4px);
-    border-radius: 0.5rem;
-    padding: 1rem;
-  }
-  
-  .next-piece-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0.5rem;
-  }
-  
-  .next-piece-grid {
-    border: 2px solid rgb(75 85 99);
-    background-color: rgb(31 41 55);
-    border-radius: 0.25rem;
-    display: grid;
-    gap: 1px;
-  }
-  
-  .next-piece-cell {
-    border-radius: 2px;
-    transition: all 0.2s ease;
-  }
-  
-  .next-piece-cell.filled {
-    border: 1px solid white;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
-  }
-  
-  .held-piece-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0.5rem;
-  }
-  
-  .held-piece-grid {
-    border: 2px solid rgb(75 85 99);
-    background-color: rgb(31 41 55);
-    border-radius: 0.25rem;
-    display: grid;
-    gap: 1px;
-  }
-  
-  .held-piece-cell {
-    border-radius: 2px;
-    transition: all 0.2s ease;
-  }
-  
-  .held-piece-cell.filled {
-    border: 1px solid white;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
-  }
-} 
+    .btn {
+        border-radius: 0.5rem;
+        border: 1px solid transparent;
+        padding: 0.75rem 1.25rem;
+        font-size: 1rem;
+        font-weight: 500;
+        background-color: rgb(31 41 55);
+        color: white;
+        cursor: pointer;
+        transition-property: color, background-color, border-color, text-decoration-color,
+            fill, stroke;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 150ms;
+    }
+
+    .btn:hover {
+        border-color: rgb(59 130 246);
+    }
+
+    .btn:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+    }
+
+    .btn:focus-visible {
+        box-shadow: 0 0 0 4px rgb(59 130 246 / 0.2);
+    }
+
+    .btn-light {
+        background-color: rgb(243 244 246);
+        color: rgb(17 24 39);
+    }
+
+    .btn-light:hover {
+        border-color: rgb(59 130 246);
+    }
+
+    .game-container {
+        position: relative;
+        background-color: rgb(17 24 39);
+        border: 2px solid rgb(75 85 99);
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .ui-panel {
+        position: relative;
+        color: white;
+        font-family: sans-serif;
+        font-size: 1rem;
+        text-align: left;
+        min-width: 200px;
+        background-color: rgb(0 0 0 / 0.5);
+        backdrop-filter: blur(4px);
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+
+    .held-piece-panel {
+        position: relative;
+        color: white;
+        font-family: sans-serif;
+        font-size: 1rem;
+        text-align: center;
+        min-width: 100px;
+        background-color: rgb(0 0 0 / 0.5);
+        backdrop-filter: blur(4px);
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+
+    .next-piece-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0.5rem;
+    }
+
+    .next-piece-grid {
+        border: 2px solid rgb(75 85 99);
+        background-color: rgb(31 41 55);
+        border-radius: 0.25rem;
+        display: grid;
+        gap: 1px;
+    }
+
+    .next-piece-cell {
+        border-radius: 2px;
+        transition: all 0.2s ease;
+    }
+
+    .next-piece-cell.filled {
+        border: 1px solid white;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    }
+
+    .held-piece-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0.5rem;
+    }
+
+    .held-piece-grid {
+        border: 2px solid rgb(75 85 99);
+        background-color: rgb(31 41 55);
+        border-radius: 0.25rem;
+        display: grid;
+        gap: 1px;
+    }
+
+    .held-piece-cell {
+        border-radius: 2px;
+        transition: all 0.2s ease;
+    }
+
+    .held-piece-cell.filled {
+        border: 1px solid white;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    }
+}
+
+/* 모바일 터치 최적화 */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* 터치 버튼 최적화 */
+button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* 모바일에서 스크롤 방지 */
+body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 게임 컨테이너 터치 최적화 */
+.game-container {
+    touch-action: none;
+}
