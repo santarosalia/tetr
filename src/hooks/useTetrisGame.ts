@@ -152,13 +152,6 @@ export const useTetrisGame = () => {
         };
     }, [dispatch, gameState.gameOver, gameState.paused, gameState.level]);
 
-    // 게임이 시작되지 않았으면 시작
-    useEffect(() => {
-        if (!gameState.isGameStarted && !gameState.gameOver) {
-            dispatch(startGame());
-        }
-    }, [gameState.isGameStarted, gameState.gameOver, dispatch]);
-
     // Spawn new piece when current piece is null
     useEffect(() => {
         if (!gameState.currentPiece && !gameState.gameOver) {
