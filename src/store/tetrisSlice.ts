@@ -19,6 +19,8 @@ const initialState: GameState & { lastPlacedPiece: Tetromino | null; isGameStart
   board: createEmptyBoard(),
   currentPiece: null,
   nextPiece: getRandomTetrominoType(),
+  heldPiece: null,
+  canHold: true,
   score: 0,
   level: 0,
   lines: 0,
@@ -38,6 +40,8 @@ const tetrisSlice = createSlice({
       state.board = createEmptyBoard();
       state.currentPiece = null;
       state.nextPiece = getRandomTetrominoType();
+      state.heldPiece = null;
+      state.canHold = true;
       state.score = 0;
       state.level = 0;
       state.lines = 0;
@@ -53,6 +57,7 @@ const tetrisSlice = createSlice({
       
       state.currentPiece = newPiece;
       state.nextPiece = newNextPiece;
+      state.canHold = true;
       // 고스트 블록 업데이트
       state.ghostPiece = getGhostPiece(newPiece, state.board);
     },
@@ -142,6 +147,8 @@ const tetrisSlice = createSlice({
       state.board = createEmptyBoard();
       state.currentPiece = null;
       state.nextPiece = getRandomTetrominoType();
+      state.heldPiece = null;
+      state.canHold = true;
       state.score = 0;
       state.level = 0;
       state.lines = 0;
@@ -165,6 +172,30 @@ const tetrisSlice = createSlice({
     
     clearLastPlacedPiece: (state) => {
       state.lastPlacedPiece = null;
+    },
+    
+    holdPiece: (state) => {
+      if (!state.currentPiece || !state.canHold || state.gameOver || state.paused) return;
+      
+      const currentType = state.currentPiece.type;
+      
+      if (state.heldPiece) {
+        // 저장된 블록이 있으면 교체
+        const newPiece = createTetromino(state.heldPiece);
+        state.currentPiece = newPiece;
+        state.heldPiece = currentType;
+      } else {
+        // 저장된 블록이 없으면 현재 블록을 저장하고 다음 블록으로 교체
+        state.heldPiece = currentType;
+        const newPiece = createTetromino(state.nextPiece);
+        const newNextPiece = getRandomTetrominoType();
+        state.currentPiece = newPiece;
+        state.nextPiece = newNextPiece;
+      }
+      
+      // 고스트 블록 업데이트
+      state.ghostPiece = getGhostPiece(state.currentPiece, state.board);
+      state.canHold = false;
     }
   }
 });
@@ -180,7 +211,8 @@ export const {
   resetGame,
   checkGameOver,
   setLevel,
-  clearLastPlacedPiece
+  clearLastPlacedPiece,
+  holdPiece
 } = tetrisSlice.actions;
 
 export default tetrisSlice.reducer; 

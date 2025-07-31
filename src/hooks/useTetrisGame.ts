@@ -8,7 +8,8 @@ import {
   dropPiece,
   togglePause,
   resetGame,
-  checkGameOver
+  checkGameOver,
+  holdPiece
 } from '../store/tetrisSlice';
 
 // 레벨에 따른 드롭 간격 계산 함수
@@ -43,6 +44,10 @@ export const useTetrisGame = () => {
 
   const handleTogglePause = useCallback(() => {
     dispatch(togglePause());
+  }, [dispatch]);
+
+  const handleHoldPiece = useCallback(() => {
+    dispatch(holdPiece());
   }, [dispatch]);
 
   const handleResetGame = useCallback(() => {
@@ -94,12 +99,17 @@ export const useTetrisGame = () => {
         case 'P':
           handleTogglePause();
           break;
+        case 'Shift':
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          handleHoldPiece();
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleMovePiece, handleRotatePiece, handleHardDrop, handleTogglePause, handleResetGame, gameState.gameOver, gameState.paused]);
+  }, [handleMovePiece, handleRotatePiece, handleHardDrop, handleTogglePause, handleHoldPiece, handleResetGame, gameState.gameOver, gameState.paused]);
 
   // Game loop
   useEffect(() => {

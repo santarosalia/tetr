@@ -61,6 +61,66 @@ export const GameUI: React.FC = () => {
     );
   };
 
+  const renderHeldPiece = () => {
+    if (!gameState.heldPiece) {
+      return (
+        <div className="held-piece-container">
+          <div 
+            className="held-piece-grid"
+            style={{
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateRows: 'repeat(4, 1fr)',
+              width: '50px',
+              height: '50px',
+              border: '2px dashed #666'
+            }}
+          >
+            {Array(16).fill(null).map((_, i) => (
+              <div
+                key={i}
+                className="held-piece-cell"
+                style={{
+                  backgroundColor: 'transparent'
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    const shape = TETROMINO_SHAPES[gameState.heldPiece][0];
+    const rows = shape.length;
+    const cols = shape[0].length;
+    
+    return (
+      <div className="held-piece-container">
+        <div 
+          className="held-piece-grid"
+          style={{
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gridTemplateRows: `repeat(${rows}, 1fr)`,
+            width: '50px',
+            height: '50px',
+            opacity: gameState.canHold ? 1 : 0.5
+          }}
+        >
+          {shape.map((row, y) =>
+            row.map((cell, x) => (
+              <div
+                key={`${x}-${y}`}
+                className={`held-piece-cell ${cell ? 'filled' : ''}`}
+                style={{
+                  backgroundColor: cell ? getTetrominoColor(gameState.heldPiece!) : 'transparent'
+                }}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const handlePause = () => {
     dispatch(togglePause());
   };
@@ -138,6 +198,11 @@ export const GameUI: React.FC = () => {
       <div className="mb-5">
         <h3 className="text-white text-lg font-semibold mb-2.5">다음 블록</h3>
         {renderNextPiece()}
+      </div>
+
+      <div className="mb-5">
+        <h3 className="text-white text-lg font-semibold mb-2.5">보유 블록</h3>
+        {renderHeldPiece()}
       </div>
 
       <div className="mb-5 space-y-2">

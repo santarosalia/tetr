@@ -16,6 +16,8 @@ export interface GameState {
   board: number[][];
   currentPiece: Tetromino | null;
   nextPiece: TetrominoType;
+  heldPiece: TetrominoType | null;
+  canHold: boolean;
   score: number;
   level: number;
   lines: number;

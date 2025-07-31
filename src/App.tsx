@@ -60,17 +60,21 @@ function App() {
         />
       ) : (
         <div 
-          className="game-container"
+          className="game-container flex"
           style={{
             width: windowSize.width,
             height: windowSize.height
           }}
         >
-          <TetrisRenderer
-            width={windowSize.width}
-            height={windowSize.height}
-          />
-          <GameUI />
+          <div className="flex-shrink-0 mr-4">
+            <GameUI />
+          </div>
+          <div className="flex-1">
+            <TetrisRenderer
+              width={windowSize.width - 200}
+              height={windowSize.height}
+            />
+          </div>
         </div>
       )}
     </div>
