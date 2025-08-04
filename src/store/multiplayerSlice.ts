@@ -7,6 +7,13 @@ interface Player {
     level: number;
     lines: number;
     gameOver: boolean;
+    gameState?: {
+        score: number;
+        level: number;
+        linesCleared: number;
+        gameOver: boolean;
+        gameStarted: boolean;
+    };
 }
 
 interface GameState {
@@ -22,6 +29,16 @@ interface GameState {
     paused: boolean;
 }
 
+interface RoomInfo {
+    roomId: string;
+    playerCount: number;
+    maxPlayers: number;
+    roomStatus: string;
+    averageScore?: number;
+    highestScore?: number;
+    createdAt?: string;
+}
+
 interface MultiplayerState {
     roomId: string | null;
     currentPlayer: Player | null;
@@ -32,6 +49,7 @@ interface MultiplayerState {
     isLoading: boolean;
     error: string | null;
     gameState: GameState | null;
+    roomInfo: RoomInfo | null;
 }
 
 const initialState: MultiplayerState = {
@@ -44,6 +62,7 @@ const initialState: MultiplayerState = {
     isLoading: false,
     error: null,
     gameState: null,
+    roomInfo: null,
 };
 
 const multiplayerSlice = createSlice({
@@ -54,7 +73,20 @@ const multiplayerSlice = createSlice({
             state.isConnected = action.payload;
         },
         updatePlayers: (state, action: PayloadAction<Player[]>) => {
-            state.players = action.payload;
+            // 서버에서 받은 플레이어 정보를 처리하여 gameState 정보를 기본 정보와 병합
+            state.players = action.payload.map((player) => {
+                const updatedPlayer = { ...player };
+
+                // gameState 정보가 있으면 기본 정보와 병합
+                if (player.gameState) {
+                    updatedPlayer.score = player.gameState.score || player.score;
+                    updatedPlayer.level = player.gameState.level || player.level;
+                    updatedPlayer.lines = player.gameState.linesCleared || player.lines;
+                    updatedPlayer.gameOver = player.gameState.gameOver || player.gameOver;
+                }
+
+                return updatedPlayer;
+            });
         },
         updateCurrentPlayer: (state, action: PayloadAction<Player>) => {
             state.currentPlayer = action.payload;
@@ -163,6 +195,32 @@ const multiplayerSlice = createSlice({
                 state.gameState.paused = action.payload;
             }
         },
+        updateRoomInfo: (state, action: PayloadAction<RoomInfo>) => {
+            state.roomInfo = action.payload;
+        },
+        updateRoomPlayerCount: (state, action: PayloadAction<number>) => {
+            if (state.roomInfo) {
+                state.roomInfo.playerCount = action.payload;
+            }
+        },
+        updateRoomStatus: (state, action: PayloadAction<string>) => {
+            if (state.roomInfo) {
+                state.roomInfo.roomStatus = action.payload;
+            }
+        },
+        updateRoomStats: (
+            state,
+            action: PayloadAction<{ averageScore?: number; highestScore?: number }>
+        ) => {
+            if (state.roomInfo) {
+                if (action.payload.averageScore !== undefined) {
+                    state.roomInfo.averageScore = action.payload.averageScore;
+                }
+                if (action.payload.highestScore !== undefined) {
+                    state.roomInfo.highestScore = action.payload.highestScore;
+                }
+            }
+        },
     },
 });
 
@@ -188,6 +246,10 @@ export const {
     updateLevel,
     updateLines,
     setPaused,
+    updateRoomInfo,
+    updateRoomPlayerCount,
+    updateRoomStatus,
+    updateRoomStats,
 } = multiplayerSlice.actions;
 
 export default multiplayerSlice.reducer;

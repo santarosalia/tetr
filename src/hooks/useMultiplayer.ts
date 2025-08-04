@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { io, Socket } from 'socket.io-client';
 import { RootState } from '../store';
@@ -19,6 +19,10 @@ import {
     updateLevel,
     updateLines,
     setPaused,
+    updateRoomInfo,
+    updateRoomPlayerCount,
+    updateRoomStatus,
+    updateRoomStats,
 } from '../store/multiplayerSlice';
 
 interface SocketData {
@@ -27,10 +31,14 @@ interface SocketData {
     score?: number;
     level?: number;
     lines?: number;
+    linesCleared?: number;
     gameState?: {
         players: any[];
         gameStarted: boolean;
         gameOver: boolean;
+        roomStatus?: string;
+        averageScore?: number;
+        highestScore?: number;
     };
     board?: number[][];
     currentPiece?: any;
@@ -39,6 +47,30 @@ interface SocketData {
     canHold?: boolean;
     paused?: boolean;
     gameOver?: boolean;
+    playerInfo?: any; // 추가된 필드
+    roomState?: {
+        players: any[];
+        gameState: any;
+        timestamp: number;
+    };
+    roomInfo?: {
+        roomId: string;
+        playerCount: number;
+        maxPlayers: number;
+        roomStatus: string;
+        averageScore?: number;
+        highestScore?: number;
+        createdAt?: string;
+    };
+    playerCount?: number;
+    roomStatus?: string;
+    averageScore?: number;
+    highestScore?: number;
+    roomStats?: {
+        averageScore?: number;
+        highestScore?: number;
+    };
+    timestamp?: number;
 }
 
 export const useMultiplayer = () => {
@@ -57,23 +89,30 @@ export const useMultiplayer = () => {
 
             socketRef.current.on('connect', () => {
                 console.log('Socket.IO 연결됨');
+                console.log('소켓 ID:', socketRef.current?.id);
+                console.log('연결 URL:', socketUrl);
                 dispatch(setConnectionStatus(true));
             });
 
             socketRef.current.on('disconnect', () => {
                 console.log('Socket.IO 연결 종료');
+                console.log('연결 해제 이유:', socketRef.current?.disconnected);
                 dispatch(setConnectionStatus(false));
             });
 
             socketRef.current.on('connect_error', (error: any) => {
                 console.error('Socket.IO 연결 오류:', error);
+                console.error('오류 메시지:', error.message);
+                console.error('오류 코드:', error.code);
                 dispatch(setConnectionStatus(false));
             });
 
             // 서버로부터 받는 이벤트들
             socketRef.current.on('playerJoined', (data: SocketData) => {
                 console.log('플레이어 참여:', data);
-                if (data.players) {
+                if (data.roomState && data.roomState.players) {
+                    dispatch(updatePlayers(data.roomState.players));
+                } else if (data.players) {
                     dispatch(updatePlayers(data.players));
                 }
             });
@@ -114,6 +153,43 @@ export const useMultiplayer = () => {
                             lines: data.lines,
                         })
                     );
+                }
+            });
+
+            socketRef.current.on('playerGameStateChanged', (data: SocketData) => {
+                console.log('플레이어 게임 상태 변경:', data);
+                console.log('데이터 구조:', {
+                    playerId: data.playerId,
+                    score: data.score,
+                    level: data.level,
+                    linesCleared: data.linesCleared,
+                    gameOver: data.gameOver,
+                    timestamp: data.timestamp,
+                });
+
+                if (
+                    data.playerId &&
+                    data.score !== undefined &&
+                    data.level !== undefined &&
+                    data.linesCleared !== undefined
+                ) {
+                    console.log('플레이어 점수 업데이트 실행:', {
+                        playerId: data.playerId,
+                        score: data.score,
+                        level: data.level,
+                        lines: data.linesCleared,
+                    });
+
+                    dispatch(
+                        updatePlayerScore({
+                            playerId: data.playerId,
+                            score: data.score,
+                            level: data.level,
+                            lines: data.linesCleared,
+                        })
+                    );
+                } else {
+                    console.log('플레이어 게임 상태 변경 데이터가 불완전함:', data);
                 }
             });
 
@@ -209,6 +285,85 @@ export const useMultiplayer = () => {
                     );
                 }
             });
+
+            // 플레이어 정보 업데이트 이벤트들
+            socketRef.current.on('roomPlayersUpdate', (data: SocketData) => {
+                console.log('룸 플레이어 업데이트:', data);
+                console.log('플레이어 데이터 구조:', data.players);
+
+                if (data.players && Array.isArray(data.players)) {
+                    console.log('플레이어 수:', data.players.length);
+                    data.players.forEach((player, index) => {
+                        console.log(`플레이어 ${index + 1}:`, {
+                            id: player.id,
+                            name: player.name,
+                            score: player.score,
+                            level: player.level,
+                            lines: player.lines,
+                            gameOver: player.gameOver,
+                            gameState: player.gameState,
+                        });
+                    });
+
+                    dispatch(updatePlayers(data.players));
+                } else {
+                    console.log('플레이어 데이터가 없거나 배열이 아님:', data.players);
+                }
+            });
+
+            // 기존 플레이어들의 상태 수신 (신규 플레이어 입장 시)
+            socketRef.current.on('existingPlayersState', (data: SocketData) => {
+                console.log('기존 플레이어 상태 수신:', data);
+                if (data.players) {
+                    dispatch(updatePlayers(data.players));
+                }
+            });
+
+            // 룸 게임 상태 수신 (신규 플레이어 입장 시)
+            socketRef.current.on('roomGameState', (data: SocketData) => {
+                console.log('룸 게임 상태 수신:', data);
+                if (data.gameState) {
+                    dispatch(updatePlayers(data.gameState.players));
+                    dispatch(setGameStarted(data.gameState.gameStarted));
+                    dispatch(setGameOver(data.gameState.gameOver));
+                }
+            });
+
+            // 룸 정보 업데이트 이벤트
+            socketRef.current.on('roomInfoUpdate', (data: SocketData) => {
+                console.log('룸 정보 업데이트:', data);
+                if (data.roomInfo) {
+                    dispatch(updateRoomInfo(data.roomInfo));
+                }
+            });
+
+            // 룸 플레이어 수 업데이트 이벤트
+            socketRef.current.on('roomPlayerCountUpdate', (data: SocketData) => {
+                console.log('룸 플레이어 수 업데이트:', data);
+                if (data.playerCount !== undefined) {
+                    dispatch(updateRoomPlayerCount(data.playerCount));
+                }
+            });
+
+            // 룸 상태 업데이트 이벤트 (신규 플레이어 입장 시 기존 플레이어들에게 전송)
+            socketRef.current.on('roomStateUpdate', (data: SocketData) => {
+                console.log('룸 상태 업데이트:', data);
+                if (data.players) {
+                    dispatch(updatePlayers(data.players));
+                }
+                if (data.gameState) {
+                    dispatch(setGameStarted(data.gameState.gameStarted));
+                    dispatch(setGameOver(data.gameState.gameOver));
+                }
+            });
+
+            // 룸 통계 업데이트 이벤트
+            socketRef.current.on('roomStatsUpdate', (data: SocketData) => {
+                console.log('룸 통계 업데이트:', data);
+                if (data.roomStats) {
+                    dispatch(updateRoomStats(data.roomStats));
+                }
+            });
         };
 
         // 연결 시작
@@ -232,8 +387,38 @@ export const useMultiplayer = () => {
     };
 
     // 자동 룸 참여 (tetrs 스타일)
-    const joinAutoRoom = (playerName: string) => {
-        emitMessage('joinAutoRoom', { name: playerName });
+    const joinAutoRoom = (
+        playerName: string
+    ): Promise<{ roomId: string; player: any }> => {
+        return new Promise((resolve, reject) => {
+            if (!socketRef.current) {
+                reject(new Error('Socket.IO가 연결되지 않았습니다.'));
+                return;
+            }
+
+            // 서버 응답을 기다리는 리스너
+            const handleJoinResponse = (response: any) => {
+                if (response.success && response.roomId) {
+                    resolve({ roomId: response.roomId, player: response.player });
+                } else {
+                    reject(
+                        new Error(response.error?.message || '룸 참여에 실패했습니다.')
+                    );
+                }
+            };
+
+            // 응답 리스너 등록
+            socketRef.current.once('joinAutoRoomResponse', handleJoinResponse);
+
+            // 서버에 요청 전송
+            emitMessage('joinAutoRoom', { name: playerName });
+
+            // 타임아웃 설정
+            setTimeout(() => {
+                socketRef.current?.off('joinAutoRoomResponse', handleJoinResponse);
+                reject(new Error('룸 참여 요청이 시간 초과되었습니다.'));
+            }, 10000);
+        });
     };
 
     // 룸 나가기
@@ -243,10 +428,14 @@ export const useMultiplayer = () => {
 
     // 게임 입력 전송
     const sendPlayerInput = (playerId: string, action: string) => {
+        console.log('플레이어 입력 전송:', { playerId, action });
+
         emitMessage('handlePlayerInput', {
             playerId,
             action,
         });
+
+        console.log('플레이어 입력 전송 완료');
     };
 
     // 게임 상태 조회
@@ -259,6 +448,21 @@ export const useMultiplayer = () => {
         emitMessage('getRoomStats', {});
     };
 
+    // 룸의 모든 플레이어 정보 조회
+    const getRoomPlayers = useCallback((roomId: string) => {
+        emitMessage('getRoomPlayers', { roomId });
+    }, []);
+
+    // 룸 정보 조회
+    const getRoomInfo = useCallback((roomId: string) => {
+        emitMessage('getRoomInfo', { roomId });
+    }, []);
+
+    // 개별 플레이어 정보 조회
+    const getPlayerInfo = (playerId: string) => {
+        emitMessage('getPlayerInfo', { playerId });
+    };
+
     return {
         isConnected: multiplayerState.isConnected,
         socket: socketRef.current,
@@ -268,5 +472,8 @@ export const useMultiplayer = () => {
         sendPlayerInput,
         getPlayerGameState,
         getRoomStats,
+        getRoomPlayers,
+        getRoomInfo,
+        getPlayerInfo,
     };
 };

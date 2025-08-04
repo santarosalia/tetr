@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { joinRoom, leaveRoom } from '../store/multiplayerSlice';
+import { joinRoom, leaveRoom, updateCurrentPlayer } from '../store/multiplayerSlice';
 import { useMultiplayer } from '../hooks/useMultiplayer';
 
 interface Room {
@@ -59,15 +59,14 @@ export const MultiplayerLobby: React.FC<MultiplayerLobbyProps> = ({
 
         setIsJoining(true);
         try {
-            // Socket.IO를 통해 자동 룸 참여
-            joinAutoRoom(playerName);
+            // Socket.IO를 통해 자동 룸 참여하고 서버에서 룸 ID와 플레이어 정보 받기
+            const { roomId, player } = await joinAutoRoom(playerName);
 
-            // 잠시 후 게임으로 이동 (서버에서 룸 ID를 받아야 함)
-            setTimeout(() => {
-                // 임시로 랜덤 룸 ID 사용 (실제로는 서버에서 받아야 함)
-                const tempRoomId = `room_${Date.now()}`;
-                onJoinGame(tempRoomId);
-            }, 1000);
+            // 서버에서 받은 플레이어 정보를 currentPlayer로 설정
+            dispatch(updateCurrentPlayer(player));
+
+            // 서버에서 받은 실제 룸 ID로 게임 참여
+            onJoinGame(roomId);
         } catch (error) {
             console.error('자동 룸 참여 실패:', error);
             alert('룸 참여에 실패했습니다.');

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { TetrisRenderer } from './TetrisRenderer';
 import { GameUI, HeldPiece, NextPiece } from './GameUI';
@@ -15,6 +15,13 @@ interface Player {
     level: number;
     lines: number;
     gameOver: boolean;
+    gameState?: {
+        score: number;
+        level: number;
+        linesCleared: number;
+        gameOver: boolean;
+        gameStarted: boolean;
+    };
 }
 
 interface MultiplayerGameProps {
@@ -33,18 +40,55 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
 }) => {
     const dispatch = useDispatch();
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
-    const { players, currentPlayer, gameStarted, gameOver, gameState } = multiplayerState;
-    const { sendPlayerInput, leaveAutoRoom, isConnected } = useMultiplayer();
+    const { players, currentPlayer, gameStarted, gameOver, gameState, roomInfo } =
+        multiplayerState;
+    const { sendPlayerInput, leaveAutoRoom, isConnected, getRoomPlayers, getRoomInfo } =
+        useMultiplayer();
 
     const [isMobileDevice, setIsMobileDevice] = useState(false);
     const [isPortraitMode, setIsPortraitMode] = useState(false);
     const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>('large');
-    const [playerId, setPlayerId] = useState<string>('');
-
     const [windowSize, setWindowSize] = useState({
         width: GAME_WIDTH + UI_PANEL_WIDTH + HELD_PIECE_WIDTH + 40,
         height: GAME_HEIGHT,
     });
+
+    // 디바운싱을 위한 ref
+    const getRoomPlayersTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 플레이어 정보 업데이트 (룸 변경 시에만)
+    useEffect(() => {
+        if (!roomId || !isConnected) return;
+
+        // 이전 타임아웃 클리어
+        if (getRoomPlayersTimeoutRef.current) {
+            clearTimeout(getRoomPlayersTimeoutRef.current);
+        }
+
+        // 디바운싱으로 연속 호출 방지
+        getRoomPlayersTimeoutRef.current = setTimeout(() => {
+            getRoomPlayers(roomId);
+            getRoomInfo(roomId);
+        }, 100);
+
+        return () => {
+            if (getRoomPlayersTimeoutRef.current) {
+                clearTimeout(getRoomPlayersTimeoutRef.current);
+            }
+        };
+    }, [roomId, isConnected]); // getRoomPlayers 의존성 제거
+
+    // 주기적으로 룸 정보와 플레이어 정보 업데이트
+    useEffect(() => {
+        if (!roomId || !isConnected) return;
+
+        const interval = setInterval(() => {
+            getRoomInfo(roomId);
+            getRoomPlayers(roomId);
+        }, 3000); // 3초마다 룸 정보와 플레이어 정보 업데이트
+
+        return () => clearInterval(interval);
+    }, [roomId, isConnected, getRoomInfo, getRoomPlayers]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -80,9 +124,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
     }, []);
 
     useEffect(() => {
-        // 플레이어 ID 생성
-        setPlayerId(`player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-
         // 게임 시작
         if (!gameStarted) {
             dispatch(startMultiplayerGame({ roomId }));
@@ -137,14 +178,20 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
     }, [gameStarted, gameOver]);
 
     const handleInput = (action: string) => {
-        if (gameStarted && !gameOver && playerId) {
-            sendPlayerInput(playerId, action);
+        console.log('키보드 입력 처리:', {
+            action,
+            gameStarted,
+            gameOver,
+            playerId: currentPlayer?.id,
+        });
+        if (gameStarted && !gameOver && currentPlayer?.id) {
+            sendPlayerInput(currentPlayer.id, action);
         }
     };
 
     const handleLeaveRoom = () => {
-        if (roomId && playerId) {
-            leaveAutoRoom(roomId, playerId);
+        if (roomId && currentPlayer?.id) {
+            leaveAutoRoom(roomId, currentPlayer.id);
         }
         dispatch(leaveRoom());
         onBackToLobby();
@@ -164,6 +211,16 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                             멀티플레이 테트리스
                         </h1>
                         <p className="text-sm text-gray-600">룸: {roomId}</p>
+                        {roomInfo && (
+                            <div className="flex items-center space-x-4 mt-1">
+                                <span className="text-xs text-gray-600">
+                                    플레이어: {roomInfo.playerCount}/{roomInfo.maxPlayers}
+                                </span>
+                                <span className="text-xs text-gray-600">
+                                    상태: {roomInfo.roomStatus}
+                                </span>
+                            </div>
+                        )}
                         <div
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
                                 isConnected
@@ -186,6 +243,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                         >
                             룸 나가기
                         </button>
+
                         {gameOver && (
                             <button
                                 onClick={handleGameRestart}
@@ -211,32 +269,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                             />
 
                             {/* 게임 상태 오버레이 */}
-                            {!gameStarted && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                    <div className="bg-white rounded-lg p-4 text-center">
-                                        <h2 className="text-lg font-bold mb-2">
-                                            게임 대기 중
-                                        </h2>
-                                        <p className="text-sm text-gray-600">
-                                            다른 플레이어들이 준비될 때까지
-                                            기다려주세요...
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {gameOver && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                    <div className="bg-white rounded-lg p-4 text-center">
-                                        <h2 className="text-lg font-bold mb-2">
-                                            게임 종료
-                                        </h2>
-                                        <p className="text-sm text-gray-600">
-                                            모든 플레이어가 게임을 마쳤습니다.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         {/* 모바일에서 보유 블록과 다음 블록을 캔버스 바깥에 표시 */}
@@ -276,32 +308,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                             <TetrisRenderer width={GAME_WIDTH} height={GAME_HEIGHT} />
 
                             {/* 게임 상태 오버레이 */}
-                            {!gameStarted && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                    <div className="bg-white rounded-lg p-6 text-center">
-                                        <h2 className="text-2xl font-bold mb-4">
-                                            게임 대기 중
-                                        </h2>
-                                        <p className="text-gray-600">
-                                            다른 플레이어들이 준비될 때까지
-                                            기다려주세요...
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {gameOver && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                    <div className="bg-white rounded-lg p-6 text-center">
-                                        <h2 className="text-2xl font-bold mb-4">
-                                            게임 종료
-                                        </h2>
-                                        <p className="text-gray-600">
-                                            모든 플레이어가 게임을 마쳤습니다.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         {/* 오른쪽 UI 패널 */}
@@ -342,8 +348,18 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                                                 )}
                                             </span>
                                             <div className="text-xs text-gray-600">
-                                                점수: {player.score} | 레벨:{' '}
-                                                {player.level} | 라인: {player.lines}
+                                                점수:{' '}
+                                                {player.gameState?.score ||
+                                                    player.score ||
+                                                    0}{' '}
+                                                | 레벨:{' '}
+                                                {player.gameState?.level ||
+                                                    player.level ||
+                                                    1}{' '}
+                                                | 라인:{' '}
+                                                {player.gameState?.linesCleared ||
+                                                    player.lines ||
+                                                    0}
                                             </div>
                                         </div>
                                         <div>
