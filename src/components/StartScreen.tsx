@@ -1,22 +1,44 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { startGame } from '../store/tetrisSlice';
+import { useMultiplayer } from '../hooks/useMultiplayer';
+import { updateCurrentPlayer } from '../store/multiplayerSlice';
 
 interface StartScreenProps {
     onStart: () => void;
-    onMultiplayer: () => void;
+    onMultiplayer: (roomId: string) => void;
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onMultiplayer }) => {
     const dispatch = useDispatch();
+    const { joinAutoRoom, isConnected } = useMultiplayer();
+    const [playerName, setPlayerName] = useState(
+        `Player${Math.floor(Math.random() * 1000)}`
+    );
+    const [isJoining, setIsJoining] = useState(false);
 
     const handleStartGame = () => {
         dispatch(startGame());
         onStart();
     };
 
-    const handleMultiplayer = () => {
-        onMultiplayer();
+    const handleMultiplayer = async () => {
+        if (!playerName.trim()) {
+            alert('플레이어 이름을 입력해주세요.');
+            return;
+        }
+
+        setIsJoining(true);
+        try {
+            const { roomId, player } = await joinAutoRoom(playerName);
+            dispatch(updateCurrentPlayer(player));
+            onMultiplayer(roomId);
+        } catch (error) {
+            console.error('멀티플레이 게임 시작 실패:', error);
+            alert('멀티플레이 게임 시작에 실패했습니다.');
+        } finally {
+            setIsJoining(false);
+        }
     };
 
     return (
@@ -52,6 +74,38 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onMultiplayer
                             }}
                         />
                     ))}
+                </div>
+            </div>
+
+            {/* 플레이어 이름 입력 */}
+            <div className="mb-6 w-full max-w-md">
+                <label className="block text-sm font-medium text-white mb-2">
+                    플레이어 이름
+                </label>
+                <input
+                    type="text"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="플레이어 이름을 입력하세요"
+                />
+            </div>
+
+            {/* 연결 상태 */}
+            <div className="mb-6">
+                <div
+                    className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${
+                        isConnected
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                    }`}
+                >
+                    <div
+                        className={`w-2 h-2 rounded-full mr-2 ${
+                            isConnected ? 'bg-green-500' : 'bg-red-500'
+                        }`}
+                    ></div>
+                    {isConnected ? '서버에 연결됨' : '서버에 연결 중...'}
                 </div>
             </div>
 
@@ -99,9 +153,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onMultiplayer
 
                 <button
                     onClick={handleMultiplayer}
-                    className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl font-bold rounded-lg shadow-lg hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all duration-200"
+                    disabled={isJoining || !isConnected}
+                    className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl font-bold rounded-lg shadow-lg hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    🌐 멀티플레이
+                    {isJoining ? '게임 참여 중...' : '🌐 멀티플레이'}
                 </button>
             </div>
         </div>

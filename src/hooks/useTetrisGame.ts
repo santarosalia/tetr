@@ -23,7 +23,6 @@ const calculateDistanceToBottom = (piece: any, board: number[][]): number => {
     while (isValidPosition(piece, board, 0, distance + 1)) {
         distance++;
     }
-    console.log(distance);
     return distance;
 };
 

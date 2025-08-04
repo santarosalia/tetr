@@ -288,23 +288,7 @@ export const useMultiplayer = () => {
 
             // 플레이어 정보 업데이트 이벤트들
             socketRef.current.on('roomPlayersUpdate', (data: SocketData) => {
-                console.log('룸 플레이어 업데이트:', data);
-                console.log('플레이어 데이터 구조:', data.players);
-
                 if (data.players && Array.isArray(data.players)) {
-                    console.log('플레이어 수:', data.players.length);
-                    data.players.forEach((player, index) => {
-                        console.log(`플레이어 ${index + 1}:`, {
-                            id: player.id,
-                            name: player.name,
-                            score: player.score,
-                            level: player.level,
-                            lines: player.lines,
-                            gameOver: player.gameOver,
-                            gameState: player.gameState,
-                        });
-                    });
-
                     dispatch(updatePlayers(data.players));
                 } else {
                     console.log('플레이어 데이터가 없거나 배열이 아님:', data.players);
@@ -399,6 +383,7 @@ export const useMultiplayer = () => {
             // 서버 응답을 기다리는 리스너
             const handleJoinResponse = (response: any) => {
                 if (response.success && response.roomId) {
+                    console.log(response);
                     resolve({ roomId: response.roomId, player: response.player });
                 } else {
                     reject(

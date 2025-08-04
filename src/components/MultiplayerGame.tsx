@@ -26,7 +26,7 @@ interface Player {
 
 interface MultiplayerGameProps {
     roomId: string;
-    onBackToLobby: () => void;
+    onBackToMenu: () => void;
 }
 
 const GAME_WIDTH = 300;
@@ -36,7 +36,7 @@ const HELD_PIECE_WIDTH = 200;
 
 export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
     roomId,
-    onBackToLobby,
+    onBackToMenu,
 }) => {
     const dispatch = useDispatch();
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
@@ -194,7 +194,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
             leaveAutoRoom(roomId, currentPlayer.id);
         }
         dispatch(leaveRoom());
-        onBackToLobby();
+        onBackToMenu();
     };
 
     const handleGameRestart = () => {

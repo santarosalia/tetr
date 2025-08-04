@@ -5,7 +5,6 @@ import { GameUI, HeldPiece, NextPiece } from './components/GameUI';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
 import { TouchControls } from './components/TouchControls';
-import { MultiplayerLobby } from './components/MultiplayerLobby';
 import { MultiplayerGame } from './components/MultiplayerGame';
 import { useTetrisGame } from './hooks/useTetrisGame';
 import { RootState } from './store';
@@ -17,7 +16,7 @@ const GAME_HEIGHT = 600;
 const UI_PANEL_WIDTH = 200; // UI 패널 고정 너비
 const HELD_PIECE_WIDTH = 200; // 보유 블록 패널 고정 너비
 
-type GameMode = 'menu' | 'singleplayer' | 'multiplayer_lobby' | 'multiplayer_game';
+type GameMode = 'menu' | 'singleplayer' | 'multiplayer_game';
 
 function App() {
     // Redux 훅을 사용하여 게임 로직 초기화
@@ -81,18 +80,9 @@ function App() {
         setGameMode('singleplayer');
     };
 
-    const handleMultiplayerStart = () => {
-        setGameMode('multiplayer_lobby');
-    };
-
-    const handleJoinMultiplayerGame = (roomId: string) => {
+    const handleMultiplayerStart = (roomId: string) => {
         setCurrentRoomId(roomId);
         setGameMode('multiplayer_game');
-    };
-
-    const handleBackToLobby = () => {
-        setGameMode('multiplayer_lobby');
-        setCurrentRoomId(null);
     };
 
     const handleBackToMenu = () => {
@@ -114,16 +104,8 @@ function App() {
                     onStart={handleGameStart}
                     onMultiplayer={handleMultiplayerStart}
                 />
-            ) : gameMode === 'multiplayer_lobby' ? (
-                <MultiplayerLobby
-                    onJoinGame={handleJoinMultiplayerGame}
-                    onBack={handleBackToMenu}
-                />
             ) : gameMode === 'multiplayer_game' && currentRoomId ? (
-                <MultiplayerGame
-                    roomId={currentRoomId}
-                    onBackToLobby={handleBackToLobby}
-                />
+                <MultiplayerGame roomId={currentRoomId} onBackToMenu={handleBackToMenu} />
             ) : gameOver ? (
                 <GameOverScreen
                     finalScore={score}
