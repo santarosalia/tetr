@@ -4,14 +4,19 @@ import { startGame } from '../store/tetrisSlice';
 
 interface StartScreenProps {
     onStart: () => void;
+    onMultiplayer: () => void;
 }
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
+export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onMultiplayer }) => {
     const dispatch = useDispatch();
 
     const handleStartGame = () => {
         dispatch(startGame());
         onStart();
+    };
+
+    const handleMultiplayer = () => {
+        onMultiplayer();
     };
 
     return (
@@ -83,13 +88,22 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
                 </div>
             </div>
 
-            {/* 시작 버튼 */}
-            <button
-                onClick={handleStartGame}
-                className="px-8 py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xl font-bold rounded-lg shadow-lg hover:from-red-600 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 animate-pulse"
-            >
-                게임 시작
-            </button>
+            {/* 게임 모드 선택 */}
+            <div className="flex flex-col space-y-4 mb-8">
+                <button
+                    onClick={handleStartGame}
+                    className="px-8 py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xl font-bold rounded-lg shadow-lg hover:from-red-600 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 animate-pulse"
+                >
+                    🎮 싱글플레이
+                </button>
+
+                <button
+                    onClick={handleMultiplayer}
+                    className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl font-bold rounded-lg shadow-lg hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all duration-200"
+                >
+                    🌐 멀티플레이
+                </button>
+            </div>
         </div>
     );
 };

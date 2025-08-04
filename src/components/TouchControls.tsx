@@ -10,40 +10,85 @@ import {
 
 interface TouchControlsProps {
     isVisible: boolean;
+    onMoveLeft?: () => void;
+    onMoveRight?: () => void;
+    onMoveDown?: () => void;
+    onRotate?: () => void;
+    onHardDrop?: () => void;
+    onHold?: () => void;
+    onPause?: () => void;
 }
 
-export const TouchControls: React.FC<TouchControlsProps> = ({ isVisible }) => {
+export const TouchControls: React.FC<TouchControlsProps> = ({
+    isVisible,
+    onMoveLeft,
+    onMoveRight,
+    onMoveDown,
+    onRotate,
+    onHardDrop,
+    onHold,
+    onPause,
+}) => {
     const dispatch = useAppDispatch();
     const gameState = useAppSelector((state) => state.tetris);
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
+    // 멀티플레이용 핸들러 또는 싱글플레이용 핸들러 사용
     const handleMoveLeft = useCallback(() => {
-        dispatch(movePiece({ offsetX: -1, offsetY: 0 }));
-    }, [dispatch]);
+        if (onMoveLeft) {
+            onMoveLeft();
+        } else {
+            dispatch(movePiece({ offsetX: -1, offsetY: 0 }));
+        }
+    }, [dispatch, onMoveLeft]);
 
     const handleMoveRight = useCallback(() => {
-        dispatch(movePiece({ offsetX: 1, offsetY: 0 }));
-    }, [dispatch]);
+        if (onMoveRight) {
+            onMoveRight();
+        } else {
+            dispatch(movePiece({ offsetX: 1, offsetY: 0 }));
+        }
+    }, [dispatch, onMoveRight]);
 
     const handleMoveDown = useCallback(() => {
-        dispatch(movePiece({ offsetX: 0, offsetY: 1 }));
-    }, [dispatch]);
+        if (onMoveDown) {
+            onMoveDown();
+        } else {
+            dispatch(movePiece({ offsetX: 0, offsetY: 1 }));
+        }
+    }, [dispatch, onMoveDown]);
 
     const handleRotate = useCallback(() => {
-        dispatch(rotatePiece());
-    }, [dispatch]);
+        if (onRotate) {
+            onRotate();
+        } else {
+            dispatch(rotatePiece());
+        }
+    }, [dispatch, onRotate]);
 
     const handleHardDrop = useCallback(() => {
-        dispatch(hardDrop());
-    }, [dispatch]);
+        if (onHardDrop) {
+            onHardDrop();
+        } else {
+            dispatch(hardDrop());
+        }
+    }, [dispatch, onHardDrop]);
 
     const handleHold = useCallback(() => {
-        dispatch(holdPiece());
-    }, [dispatch]);
+        if (onHold) {
+            onHold();
+        } else {
+            dispatch(holdPiece());
+        }
+    }, [dispatch, onHold]);
 
     const handlePause = useCallback(() => {
-        dispatch(togglePause());
-    }, [dispatch]);
+        if (onPause) {
+            onPause();
+        } else {
+            dispatch(togglePause());
+        }
+    }, [dispatch, onPause]);
 
     const handleTouchStart = useCallback((e: React.TouchEvent) => {
         const touch = e.touches[0];

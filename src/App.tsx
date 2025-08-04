@@ -5,6 +5,8 @@ import { GameUI, HeldPiece, NextPiece } from './components/GameUI';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
 import { TouchControls } from './components/TouchControls';
+import { MultiplayerLobby } from './components/MultiplayerLobby';
+import { MultiplayerGame } from './components/MultiplayerGame';
 import { useTetrisGame } from './hooks/useTetrisGame';
 import { RootState } from './store';
 import { startGame } from './store/tetrisSlice';
@@ -15,13 +17,19 @@ const GAME_HEIGHT = 600;
 const UI_PANEL_WIDTH = 200; // UI 패널 고정 너비
 const HELD_PIECE_WIDTH = 200; // 보유 블록 패널 고정 너비
 
+type GameMode = 'menu' | 'singleplayer' | 'multiplayer_lobby' | 'multiplayer_game';
+
 function App() {
     // Redux 훅을 사용하여 게임 로직 초기화
     useTetrisGame();
 
     const gameState = useSelector((state: RootState) => state.tetris);
+    const multiplayerState = useSelector((state: RootState) => state.multiplayer);
     const { isGameStarted, gameOver, score, level, lines } = gameState;
     const dispatch = useDispatch();
+
+    const [gameMode, setGameMode] = useState<GameMode>('menu');
+    const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
 
     const [isMobileDevice, setIsMobileDevice] = useState(false);
     const [_isPortraitMode, setIsPortraitMode] = useState(false);
@@ -70,16 +78,52 @@ function App() {
 
     const handleGameStart = () => {
         dispatch(startGame());
+        setGameMode('singleplayer');
+    };
+
+    const handleMultiplayerStart = () => {
+        setGameMode('multiplayer_lobby');
+    };
+
+    const handleJoinMultiplayerGame = (roomId: string) => {
+        setCurrentRoomId(roomId);
+        setGameMode('multiplayer_game');
+    };
+
+    const handleBackToLobby = () => {
+        setGameMode('multiplayer_lobby');
+        setCurrentRoomId(null);
+    };
+
+    const handleBackToMenu = () => {
+        setGameMode('menu');
+        setCurrentRoomId(null);
     };
 
     const handleGameRestart = () => {
         handleGameStart();
     };
 
+    // 멀티플레이 게임 중인지 확인
+    const isMultiplayerGame = gameMode === 'multiplayer_game';
+
     return (
         <div className="w-screen h-screen bg-black flex justify-center items-center overflow-hidden">
-            {!isGameStarted ? (
-                <StartScreen onStart={handleGameStart} />
+            {gameMode === 'menu' ? (
+                <StartScreen
+                    onStart={handleGameStart}
+                    onMultiplayer={handleMultiplayerStart}
+                />
+            ) : gameMode === 'multiplayer_lobby' ? (
+                <MultiplayerLobby
+                    onJoinGame={handleJoinMultiplayerGame}
+                    onBack={handleBackToMenu}
+                />
+            ) : gameMode === 'multiplayer_game' && currentRoomId ? (
+                <MultiplayerGame
+                    roomId={currentRoomId}
+                    onBackToLobby={handleBackToLobby}
+                />
             ) : gameOver ? (
                 <GameOverScreen
                     finalScore={score}
