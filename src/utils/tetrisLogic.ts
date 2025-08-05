@@ -254,3 +254,61 @@ export function getGhostPiece(tetromino: Tetromino, board: number[][]): Tetromin
         position: ghostPosition,
     };
 }
+
+// 레벨에 따른 드롭 간격 계산
+export function calculateDropInterval(
+    level: number,
+    distanceToBottom: number = 0
+): number {
+    // 표준 테트리스 속도 공식: (0.8 - ((level - 1) * 0.007))^(level - 1) * 1000
+    // 최소 50ms, 최대 1000ms
+    if (level <= 0) return 1000;
+    if (level >= 29) return 50;
+
+    const baseInterval = Math.pow(0.8 - (level - 1) * 0.007, level - 1) * 1000;
+    let interval = Math.max(50, Math.min(1000, baseInterval));
+
+    // 바닥까지의 거리가 0이면 인터벌을 늘림 (더 천천히 떨어지도록)
+    if (distanceToBottom === 0) {
+        interval = Math.min(1000); // 1초로 고정
+    }
+
+    return interval;
+}
+
+// 바닥까지의 거리 계산
+export function calculateDistanceToBottom(piece: Tetromino, board: number[][]): number {
+    if (!piece) return 0;
+
+    let distance = 0;
+
+    // 아래로 이동할 수 있는 최대 거리를 찾음
+    while (isValidPosition(piece, board, 0, distance + 1)) {
+        distance++;
+    }
+
+    return distance;
+}
+
+// 라인 클리어 및 점수 계산
+export function clearLinesAndCalculateScore(
+    board: number[][],
+    level: number
+): { newBoard: number[][]; linesCleared: number; score: number } {
+    const { newBoard, linesCleared } = clearLines(board);
+    const score = calculateScore(linesCleared, level);
+
+    return { newBoard, linesCleared, score };
+}
+
+// 하드 드롭
+export function hardDrop(
+    currentPiece: Tetromino,
+    board: number[][]
+): { droppedPiece: Tetromino; dropDistance: number } {
+    const originalY = currentPiece.position.y;
+    const droppedPiece = dropTetromino(currentPiece, board);
+    const dropDistance = droppedPiece.position.y - originalY;
+
+    return { droppedPiece, dropDistance };
+}
