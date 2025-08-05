@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { TetrisRenderer } from './TetrisRenderer';
 import { GameUI, HeldPiece, NextPiece } from './GameUI';
 import { TouchControls } from './TouchControls';
+import { GameOverScreen } from './GameOverScreen';
 import { RootState } from '../store';
 import { leaveRoom, startMultiplayerGame } from '../store/multiplayerSlice';
 import { useMultiplayer } from '../hooks/useMultiplayer';
@@ -391,6 +392,18 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                 onHardDrop={() => handleInput('hard_drop')}
                 onHold={() => handleInput('hold')}
             />
+
+            {/* 게임 오버 화면 */}
+            {gameOver && (
+                <div className="fixed inset-0 z-50">
+                    <GameOverScreen
+                        finalScore={gameState?.score || 0}
+                        finalLevel={gameState?.level || 1}
+                        finalLines={gameState?.lines || 0}
+                        onRestart={handleGameRestart}
+                    />
+                </div>
+            )}
         </div>
     );
 };

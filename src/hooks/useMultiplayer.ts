@@ -39,6 +39,14 @@ interface SocketData {
         roomStatus?: string;
         averageScore?: number;
         highestScore?: number;
+        board?: number[][];
+        currentPiece?: any;
+        nextPiece?: any;
+        heldPiece?: any;
+        score?: number;
+        level?: number;
+        linesCleared?: number;
+        paused?: boolean;
     };
     board?: number[][];
     currentPiece?: any;
@@ -71,6 +79,9 @@ interface SocketData {
         highestScore?: number;
     };
     timestamp?: number;
+    finalScore?: number;
+    finalLevel?: number;
+    finalLines?: number;
 }
 
 export const useMultiplayer = () => {
@@ -135,6 +146,22 @@ export const useMultiplayer = () => {
             socketRef.current.on('gameOver', (data: SocketData) => {
                 console.log('게임 종료:', data);
                 dispatch(setGameOver(true));
+
+                // 게임 오버 시 최종 점수 정보 업데이트
+                if (
+                    data.finalScore !== undefined &&
+                    data.finalLevel !== undefined &&
+                    data.finalLines !== undefined
+                ) {
+                    dispatch(updateScore(data.finalScore));
+                    dispatch(updateLevel(data.finalLevel));
+                    dispatch(updateLines(data.finalLines));
+                }
+
+                // 게임 오버된 플레이어 정보 업데이트
+                if (data.playerId) {
+                    dispatch(setPlayerGameOver(data.playerId));
+                }
             });
 
             socketRef.current.on('playerScoreUpdate', (data: SocketData) => {
@@ -203,9 +230,34 @@ export const useMultiplayer = () => {
             socketRef.current.on('gameStateUpdate', (data: SocketData) => {
                 console.log('게임 상태 업데이트:', data);
                 if (data.gameState) {
-                    dispatch(updatePlayers(data.gameState.players));
-                    dispatch(setGameStarted(data.gameState.gameStarted));
-                    dispatch(setGameOver(data.gameState.gameOver));
+                    // 전체 게임 상태 업데이트
+                    if (data.gameState.board) {
+                        dispatch(updateBoard(data.gameState.board));
+                    }
+                    if (data.gameState.currentPiece) {
+                        dispatch(updateCurrentPiece(data.gameState.currentPiece));
+                    }
+                    if (data.gameState.nextPiece) {
+                        dispatch(updateNextPiece(data.gameState.nextPiece));
+                    }
+                    if (data.gameState.heldPiece) {
+                        dispatch(updateHeldPiece(data.gameState.heldPiece));
+                    }
+                    if (data.gameState.score !== undefined) {
+                        dispatch(updateScore(data.gameState.score));
+                    }
+                    if (data.gameState.level !== undefined) {
+                        dispatch(updateLevel(data.gameState.level));
+                    }
+                    if (data.gameState.linesCleared !== undefined) {
+                        dispatch(updateLines(data.gameState.linesCleared));
+                    }
+                    if (data.gameState.gameOver !== undefined) {
+                        dispatch(setGameOver(data.gameState.gameOver));
+                    }
+                    if (data.gameState.paused !== undefined) {
+                        dispatch(setPaused(data.gameState.paused));
+                    }
                 }
             });
 
@@ -283,6 +335,40 @@ export const useMultiplayer = () => {
                             paused: data.paused || false,
                         })
                     );
+                }
+            });
+
+            socketRef.current.on('gameStateUpdated', (data: SocketData) => {
+                console.log('게임 상태 업데이트 수신:', data);
+                if (data.gameState) {
+                    // 전체 게임 상태 업데이트
+                    if (data.gameState.board) {
+                        dispatch(updateBoard(data.gameState.board));
+                    }
+                    if (data.gameState.currentPiece) {
+                        dispatch(updateCurrentPiece(data.gameState.currentPiece));
+                    }
+                    if (data.gameState.nextPiece) {
+                        dispatch(updateNextPiece(data.gameState.nextPiece));
+                    }
+                    if (data.gameState.heldPiece) {
+                        dispatch(updateHeldPiece(data.gameState.heldPiece));
+                    }
+                    if (data.gameState.score !== undefined) {
+                        dispatch(updateScore(data.gameState.score));
+                    }
+                    if (data.gameState.level !== undefined) {
+                        dispatch(updateLevel(data.gameState.level));
+                    }
+                    if (data.gameState.linesCleared !== undefined) {
+                        dispatch(updateLines(data.gameState.linesCleared));
+                    }
+                    if (data.gameState.gameOver !== undefined) {
+                        dispatch(setGameOver(data.gameState.gameOver));
+                    }
+                    if (data.gameState.paused !== undefined) {
+                        dispatch(setPaused(data.gameState.paused));
+                    }
                 }
             });
 
