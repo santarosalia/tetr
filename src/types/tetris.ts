@@ -1,35 +1,19 @@
-export type TetrominoType = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L';
-
-export interface Position {
-  x: number;
-  y: number;
-}
-
-export interface Tetromino {
-  type: TetrominoType;
-  position: Position;
-  rotation: number;
-  shape: number[][];
-}
+import { TetrominoType, Position, Tetromino, GameConfig } from './shared';
 
 export interface GameState {
-  board: number[][];
-  currentPiece: Tetromino | null;
-  nextPiece: TetrominoType;
-  heldPiece: TetrominoType | null;
-  canHold: boolean;
-  score: number;
-  level: number;
-  lines: number;
-  gameOver: boolean;
-  paused: boolean;
-  isGameStarted: boolean;
-  ghostPiece: Tetromino | null;
+    board: number[][];
+    currentPiece: Tetromino | null;
+    nextPiece: TetrominoType;
+    heldPiece: TetrominoType | null;
+    canHold: boolean;
+    score: number;
+    level: number;
+    lines: number;
+    gameOver: boolean;
+    paused: boolean;
+    isGameStarted: boolean;
+    ghostPiece: Tetromino | null;
 }
 
-export interface GameConfig {
-  boardWidth: number;
-  boardHeight: number;
-  blockSize: number;
-  dropInterval: number;
-} 
+// 게임 설정은 공통 타입 사용
+export type { GameConfig };

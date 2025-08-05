@@ -1,56 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-interface Player {
-    id: string;
-    name: string;
-    score: number;
-    level: number;
-    lines: number;
-    gameOver: boolean;
-    gameState?: {
-        score: number;
-        level: number;
-        linesCleared: number;
-        gameOver: boolean;
-        gameStarted: boolean;
-    };
-}
-
-interface GameState {
-    board: number[][];
-    currentPiece: any;
-    nextPiece: any;
-    heldPiece: any;
-    canHold: boolean;
-    score: number;
-    level: number;
-    lines: number;
-    gameOver: boolean;
-    paused: boolean;
-}
-
-interface RoomInfo {
-    roomId: string;
-    playerCount: number;
-    maxPlayers: number;
-    roomStatus: string;
-    averageScore?: number;
-    highestScore?: number;
-    createdAt?: string;
-}
-
-interface MultiplayerState {
-    roomId: string | null;
-    currentPlayer: Player | null;
-    players: Player[];
-    gameStarted: boolean;
-    gameOver: boolean;
-    isConnected: boolean;
-    isLoading: boolean;
-    error: string | null;
-    gameState: GameState | null;
-    roomInfo: RoomInfo | null;
-}
+import { 
+    Player, 
+    GameState, 
+    RoomInfo, 
+    MultiplayerState, 
+    PlayerScoreUpdate 
+} from '../types/multiplayer';
 
 const initialState: MultiplayerState = {
     roomId: null,
@@ -97,15 +52,7 @@ const multiplayerSlice = createSlice({
         setGameOver: (state, action: PayloadAction<boolean>) => {
             state.gameOver = action.payload;
         },
-        updatePlayerScore: (
-            state,
-            action: PayloadAction<{
-                playerId: string;
-                score: number;
-                level: number;
-                lines: number;
-            }>
-        ) => {
+        updatePlayerScore: (state, action: PayloadAction<PlayerScoreUpdate>) => {
             const { playerId, score, level, lines } = action.payload;
             const player = state.players.find((p) => p.id === playerId);
             if (player) {

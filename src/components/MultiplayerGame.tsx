@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { TetrisRenderer } from './TetrisRenderer';
 import { GameUI, HeldPiece, NextPiece } from './GameUI';
@@ -8,22 +8,7 @@ import { RootState } from '../store';
 import { leaveRoom, startMultiplayerGame } from '../store/multiplayerSlice';
 import { useMultiplayer } from '../hooks/useMultiplayer';
 import { isMobile, isPortrait, getScreenSize } from '../utils/mobileDetection';
-
-interface Player {
-    id: string;
-    name: string;
-    score: number;
-    level: number;
-    lines: number;
-    gameOver: boolean;
-    gameState?: {
-        score: number;
-        level: number;
-        linesCleared: number;
-        gameOver: boolean;
-        gameStarted: boolean;
-    };
-}
+import { Player } from '../types/multiplayer';
 
 interface MultiplayerGameProps {
     roomId: string;
@@ -77,7 +62,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                 clearTimeout(getRoomPlayersTimeoutRef.current);
             }
         };
-    }, [roomId, isConnected]); // getRoomPlayers 의존성 제거
+    }, [roomId, isConnected, getRoomPlayers, getRoomInfo]);
 
     // 주기적으로 룸 정보와 플레이어 정보 업데이트
     useEffect(() => {
@@ -91,6 +76,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         return () => clearInterval(interval);
     }, [roomId, isConnected, getRoomInfo, getRoomPlayers]);
 
+    // 반응형 레이아웃 처리
     useEffect(() => {
         const handleResize = () => {
             setIsMobileDevice(isMobile());
@@ -124,16 +110,16 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // 게임 시작 처리
     useEffect(() => {
-        // 게임 시작
         if (!gameStarted) {
             dispatch(startMultiplayerGame({ roomId }));
         }
     }, [dispatch, roomId, gameStarted]);
 
     // 키보드 이벤트 처리
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = useCallback(
+        (event: KeyboardEvent) => {
             if (!gameStarted || gameOver) return;
 
             // 멀티플레이어에서는 서버로 입력을 전송
@@ -172,35 +158,111 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                     handleInput('pause');
                     break;
             }
-        };
+        },
+        [gameStarted, gameOver]
+    );
 
+    useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [gameStarted, gameOver]);
+    }, [handleKeyDown]);
 
-    const handleInput = (action: string) => {
-        console.log('키보드 입력 처리:', {
-            action,
-            gameStarted,
-            gameOver,
-            playerId: currentPlayer?.id,
-        });
-        if (gameStarted && !gameOver && currentPlayer?.id) {
-            sendPlayerInput(currentPlayer.id, action);
-        }
-    };
+    const handleInput = useCallback(
+        (action: string) => {
+            console.log('키보드 입력 처리:', {
+                action,
+                gameStarted,
+                gameOver,
+                playerId: currentPlayer?.id,
+            });
+            if (gameStarted && !gameOver && currentPlayer?.id) {
+                sendPlayerInput(currentPlayer.id, action);
+            }
+        },
+        [gameStarted, gameOver, currentPlayer?.id, sendPlayerInput]
+    );
 
-    const handleLeaveRoom = () => {
+    const handleLeaveRoom = useCallback(() => {
         if (roomId && currentPlayer?.id) {
             leaveAutoRoom(roomId, currentPlayer.id);
         }
         dispatch(leaveRoom());
         onBackToMenu();
-    };
+    }, [roomId, currentPlayer?.id, leaveAutoRoom, dispatch, onBackToMenu]);
 
-    const handleGameRestart = () => {
+    const handleGameRestart = useCallback(() => {
         dispatch(startMultiplayerGame({ roomId }));
-    };
+    }, [dispatch, roomId]);
+
+    // 플레이어 목록 렌더링 최적화
+    const playerList = useMemo(() => {
+        if (players.length === 0) {
+            return (
+                <p className="text-gray-500 text-center py-4 text-sm">
+                    플레이어가 없습니다.
+                </p>
+            );
+        }
+
+        return players.map((player: Player) => (
+            <div
+                key={player.id}
+                className={`p-2 rounded border text-sm ${
+                    player.id === currentPlayer?.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200'
+                }`}
+            >
+                <div className="flex justify-between items-center">
+                    <div>
+                        <span className="font-medium text-gray-800">
+                            {player.name}
+                            {player.id === currentPlayer?.id && (
+                                <span className="ml-1 text-blue-600 text-xs">(나)</span>
+                            )}
+                        </span>
+                        <div className="text-xs text-gray-600">
+                            점수: {player.gameState?.score || player.score || 0} | 레벨:{' '}
+                            {player.gameState?.level || player.level || 1} | 라인:{' '}
+                            {player.gameState?.linesCleared || player.lines || 0}
+                        </div>
+                    </div>
+                    <div>
+                        {player.gameOver ? (
+                            <span className="px-1 py-0.5 bg-red-100 text-red-800 rounded text-xs">
+                                게임 오버
+                            </span>
+                        ) : (
+                            <span className="px-1 py-0.5 bg-green-100 text-green-800 rounded text-xs">
+                                진행 중
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
+        ));
+    }, [players, currentPlayer?.id]);
+
+    // 연결 상태 표시
+    const connectionStatus = useMemo(
+        () => (
+            <div
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                    isConnected
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                }`}
+            >
+                <div
+                    className={`w-1 h-1 rounded-full mr-1 ${
+                        isConnected ? 'bg-green-500' : 'bg-red-500'
+                    }`}
+                ></div>
+                {isConnected ? '연결됨' : '연결 중...'}
+            </div>
+        ),
+        [isConnected]
+    );
 
     return (
         <div className="w-screen h-screen bg-black flex justify-center items-center overflow-hidden">
@@ -222,20 +284,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                                 </span>
                             </div>
                         )}
-                        <div
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                                isConnected
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
-                            }`}
-                        >
-                            <div
-                                className={`w-1 h-1 rounded-full mr-1 ${
-                                    isConnected ? 'bg-green-500' : 'bg-red-500'
-                                }`}
-                            ></div>
-                            {isConnected ? '연결됨' : '연결 중...'}
-                        </div>
+                        {connectionStatus}
                     </div>
                     <div className="flex space-x-2">
                         <button
@@ -268,8 +317,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                                 width={windowSize.width}
                                 height={windowSize.height}
                             />
-
-                            {/* 게임 상태 오버레이 */}
                         </div>
 
                         {/* 모바일에서 보유 블록과 다음 블록을 캔버스 바깥에 표시 */}
@@ -307,8 +354,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                         {/* 중앙 게임 영역 */}
                         <div className="flex-shrink-0 mx-4 relative">
                             <TetrisRenderer width={GAME_WIDTH} height={GAME_HEIGHT} />
-
-                            {/* 게임 상태 오버레이 */}
                         </div>
 
                         {/* 오른쪽 UI 패널 */}
@@ -323,62 +368,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
             {!isMobileDevice && (
                 <div className="absolute right-4 top-20 w-64 bg-white shadow-lg rounded-lg p-4 max-h-96 overflow-y-auto">
                     <h2 className="text-lg font-bold mb-3">플레이어 목록</h2>
-                    <div className="space-y-2">
-                        {players.length === 0 ? (
-                            <p className="text-gray-500 text-center py-4 text-sm">
-                                플레이어가 없습니다.
-                            </p>
-                        ) : (
-                            players.map((player: Player) => (
-                                <div
-                                    key={player.id}
-                                    className={`p-2 rounded border text-sm ${
-                                        player.id === currentPlayer?.id
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-gray-200'
-                                    }`}
-                                >
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <span className="font-medium text-gray-800">
-                                                {player.name}
-                                                {player.id === currentPlayer?.id && (
-                                                    <span className="ml-1 text-blue-600 text-xs">
-                                                        (나)
-                                                    </span>
-                                                )}
-                                            </span>
-                                            <div className="text-xs text-gray-600">
-                                                점수:{' '}
-                                                {player.gameState?.score ||
-                                                    player.score ||
-                                                    0}{' '}
-                                                | 레벨:{' '}
-                                                {player.gameState?.level ||
-                                                    player.level ||
-                                                    1}{' '}
-                                                | 라인:{' '}
-                                                {player.gameState?.linesCleared ||
-                                                    player.lines ||
-                                                    0}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            {player.gameOver ? (
-                                                <span className="px-1 py-0.5 bg-red-100 text-red-800 rounded text-xs">
-                                                    게임 오버
-                                                </span>
-                                            ) : (
-                                                <span className="px-1 py-0.5 bg-green-100 text-green-800 rounded text-xs">
-                                                    진행 중
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
+                    <div className="space-y-2">{playerList}</div>
                 </div>
             )}
 
