@@ -185,9 +185,15 @@ const tetrisSlice = createSlice({
         },
 
         checkGameOver: (state) => {
-            if (state.currentPiece && !isValidPosition(state.currentPiece, state.board)) {
-                state.gameOver = true;
-            }
+            // 게임 오버는 서버에서 결정하므로 클라이언트에서는 제거
+            // if (state.currentPiece && !isValidPosition(state.currentPiece, state.board)) {
+            //     state.gameOver = true;
+            // }
+        },
+
+        // 서버에서 받은 게임 오버 상태를 설정하는 액션 추가
+        setGameOver: (state, action: PayloadAction<boolean>) => {
+            state.gameOver = action.payload;
         },
 
         setLevel: (state, action: PayloadAction<number>) => {
@@ -239,6 +245,7 @@ export const {
     setLevel,
     clearLastPlacedPiece,
     holdPiece,
+    setGameOver,
 } = tetrisSlice.actions;
 
 export default tetrisSlice.reducer;

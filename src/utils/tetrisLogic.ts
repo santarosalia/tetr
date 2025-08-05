@@ -234,9 +234,10 @@ export function calculateLevel(lines: number): number {
     return Math.floor(lines / 10);
 }
 
-export function isGameOver(board: number[][]): boolean {
-    return board[0].some((cell) => cell === 1);
-}
+// 게임 오버 로직은 서버에서 처리하므로 클라이언트에서는 제거
+// export function isGameOver(board: number[][]): boolean {
+//     return board[0].some((cell) => cell === 1);
+// }
 
 export function getGhostPiece(tetromino: Tetromino, board: number[][]): Tetromino {
     // 현재 피스의 떨어질 위치를 계산
