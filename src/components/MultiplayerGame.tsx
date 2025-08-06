@@ -34,7 +34,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         isConnected,
         getRoomInfo,
         fixGameStateSync,
-        forceGameOverState,
         handleInput,
         startRoomGame,
         socket,
@@ -341,16 +340,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                                 title="게임 상태 동기화 수정"
                             >
                                 동기화 수정
-                            </button>
-                        )}
-
-                        {gameStarted && currentPlayer?.id && (
-                            <button
-                                onClick={() => forceGameOverState(currentPlayer.id)}
-                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                                title="게임 오버 상태 강제 수정"
-                            >
-                                게임 오버 강제
                             </button>
                         )}
 

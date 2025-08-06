@@ -375,38 +375,6 @@ export const useMultiplayer = () => {
             }
         },
 
-        // 게임 오버 상태 강제 수정 처리
-        gameOverStateForced: (data: SocketData) => {
-            console.log('게임 오버 상태 강제 수정 완료:', data);
-            if (data.success && data.gameState) {
-                // 서버에서 수정된 상태로 강제 동기화
-                dispatch(
-                    syncGameState({
-                        board: data.gameState.board || [],
-                        currentPiece: data.gameState.currentPiece || null,
-                        nextPiece: data.gameState.nextPiece || null,
-                        heldPiece: data.gameState.heldPiece || null,
-                        canHold: data.gameState.canHold || false,
-                        score: data.gameState.score || 0,
-                        level: data.gameState.level || 1,
-                        lines: data.gameState.linesCleared || 0,
-                        gameOver: data.gameState.gameOver || true,
-                        paused: data.gameState.paused || false,
-                        ghostPiece: data.gameState.ghostPiece || null,
-                    })
-                );
-
-                // 게임 오버 상태 설정
-                dispatch(setGameOver(true));
-
-                console.warn(
-                    '클라이언트 상태가 서버에서 강제 게임 오버로 설정되었습니다.'
-                );
-            } else {
-                console.error('게임 오버 상태 강제 수정 실패:', data.error);
-            }
-        },
-
         // 에러 처리
         error: (data: SocketData) => {
             console.error('서버 에러:', data);
@@ -586,15 +554,6 @@ export const useMultiplayer = () => {
         [emitMessage]
     );
 
-    // 게임 오버 상태 강제 수정 요청
-    const forceGameOverState = useCallback(
-        (playerId: string) => {
-            console.log('게임 오버 상태 강제 수정 요청:', playerId);
-            emitMessage('forceGameOverState', { playerId });
-        },
-        [emitMessage]
-    );
-
     // 룸 게임 시작 (새로운 플로우용)
     const startRoomGame = useCallback(
         (roomId: string): Promise<{ success: boolean; roomId: string }> => {
@@ -717,7 +676,6 @@ export const useMultiplayer = () => {
         getRoomInfo,
         getPlayerInfo,
         fixGameStateSync,
-        forceGameOverState,
         startRoomGame,
         handleInput,
         waitForConnection,
