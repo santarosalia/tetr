@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { TetrisRenderer } from './TetrisRenderer';
 import { GameUI, HeldPiece, NextPiece } from './GameUI';
@@ -28,15 +28,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
     const { players, currentPlayer, gameStarted, gameOver, gameState, roomInfo } =
         multiplayerState;
-    const {
-        sendPlayerInput,
-        leaveAutoRoom,
-        isConnected,
-        getRoomInfo,
-        handleInput,
-        socket,
-        waitForConnection,
-    } = useMultiplayer();
+    const { leaveAutoRoom, isConnected, handleInput } = useMultiplayer();
 
     const [isMobileDevice, setIsMobileDevice] = useState(false);
     const [isPortraitMode, setIsPortraitMode] = useState(false);
@@ -45,9 +37,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         width: GAME_WIDTH + UI_PANEL_WIDTH + HELD_PIECE_WIDTH + 40,
         height: GAME_HEIGHT,
     });
-
-    // 디바운싱을 위한 ref
-    const syncCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // 반응형 레이아웃 처리
     useEffect(() => {

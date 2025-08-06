@@ -5,14 +5,12 @@ import { RootState } from '../store';
 import {
     setConnectionStatus,
     updatePlayers,
-    updateCurrentPlayer,
     setGameStarted,
     setGameOver,
     updatePlayerScore,
     setPlayerGameOver,
     updateRoomInfo,
     updateRoomPlayerCount,
-    updateRoomStatus,
     updateRoomStats,
 } from '../store/multiplayerSlice';
 import { SocketData, JoinRoomResponse } from '../types/multiplayer';
@@ -302,36 +300,6 @@ export const useMultiplayer = () => {
             }
         },
 
-        roomStatsUpdate: (data: SocketData) => {
-            console.log('룸 통계 업데이트:', data);
-            if (data.roomStats) {
-                dispatch(updateRoomStats(data.roomStats));
-            }
-        },
-
-        // 강제 상태 동기화 처리 (치팅 방지)
-        forceStateSync: (data: SocketData) => {
-            console.warn('서버에서 강제 상태 동기화 요청:', data);
-            if (data.gameState && data.gameState.board) {
-                // 서버 상태로 강제 동기화
-                dispatch(
-                    syncGameState({
-                        board: data.gameState.board,
-                        currentPiece: data.gameState.currentPiece || null,
-                        nextPiece: data.gameState.nextPiece || null,
-                        heldPiece: data.gameState.heldPiece || null,
-                        canHold: data.gameState.canHold || false,
-                        score: data.gameState.score || 0,
-                        level: data.gameState.level || 1,
-                        lines: data.gameState.lines || 0,
-                        gameOver: data.gameState.gameOver || false,
-                        paused: data.gameState.paused || false,
-                    })
-                );
-                console.warn('클라이언트 상태가 서버 상태로 강제 동기화되었습니다.');
-            }
-        },
-
         // 에러 처리
         error: (data: SocketData) => {
             console.error('서버 에러:', data);
@@ -473,35 +441,6 @@ export const useMultiplayer = () => {
         [emitMessage]
     );
 
-    // 게임 상태 조회
-    const getPlayerGameState = useCallback(
-        (playerId: string) => {
-            emitMessage('getPlayerGameState', { playerId });
-        },
-        [emitMessage]
-    );
-
-    // 룸 통계 조회
-    const getRoomStats = useCallback(() => {
-        emitMessage('getRoomStats', {});
-    }, [emitMessage]);
-
-    // 룸 정보 조회
-    const getRoomInfo = useCallback(
-        (roomId: string) => {
-            emitMessage('getRoomInfo', { roomId });
-        },
-        [emitMessage]
-    );
-
-    // 개별 플레이어 정보 조회
-    const getPlayerInfo = useCallback(
-        (playerId: string) => {
-            emitMessage('getPlayerInfo', { playerId });
-        },
-        [emitMessage]
-    );
-
     const { gameStarted, gameOver, currentPlayer } = multiplayerState;
 
     const handleInput = useCallback(
@@ -550,10 +489,6 @@ export const useMultiplayer = () => {
         joinAutoRoom,
         leaveAutoRoom,
         sendPlayerInput,
-        getPlayerGameState,
-        getRoomStats,
-        getRoomInfo,
-        getPlayerInfo,
         handleInput,
         waitForConnection,
         cleanupGlobalSocket,
