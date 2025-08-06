@@ -145,18 +145,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onMultiplayer
             {/* 게임 모드 선택 */}
             <div className="flex flex-col space-y-4 mb-8">
                 <button
-                    onClick={handleStartGame}
-                    className="px-8 py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xl font-bold rounded-lg shadow-lg hover:from-red-600 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 animate-pulse"
-                >
-                    🎮 싱글플레이
-                </button>
-
-                <button
                     onClick={handleMultiplayer}
                     disabled={isJoining || !isConnected}
                     className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl font-bold rounded-lg shadow-lg hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isJoining ? '게임 참여 중...' : '🌐 멀티플레이'}
+                    {isJoining ? '게임 참여 중...' : '플레이'}
                 </button>
             </div>
         </div>

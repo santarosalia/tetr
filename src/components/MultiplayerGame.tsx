@@ -52,31 +52,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
     // 디바운싱을 위한 ref
     const syncCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // 룸 정보 업데이트 (룸 변경 시에만)
-    useEffect(() => {
-        if (!roomId || !isConnected) return;
-
-        // 디바운싱으로 연속 호출 방지
-        const timeoutId = setTimeout(() => {
-            getRoomInfo(roomId);
-        }, 100);
-
-        return () => {
-            clearTimeout(timeoutId);
-        };
-    }, [roomId, isConnected, getRoomInfo]);
-
-    // 주기적으로 룸 정보 업데이트
-    useEffect(() => {
-        if (!roomId || !isConnected) return;
-
-        const interval = setInterval(() => {
-            getRoomInfo(roomId);
-        }, 3000); // 3초마다 룸 정보 업데이트
-
-        return () => clearInterval(interval);
-    }, [roomId, isConnected, getRoomInfo]);
-
     // 반응형 레이아웃 처리
     useEffect(() => {
         const handleResize = () => {
