@@ -40,8 +40,7 @@ type SocketEvent =
     | 'roomStateUpdate'
     | 'roomStatsUpdate'
     | 'joinAutoRoomResponse'
-    | 'startRoomGameResponse'
-    | 'gameStateSyncFixed';
+    | 'startRoomGameResponse';
 
 export const useMultiplayer = () => {
     const dispatch = useDispatch();
@@ -234,22 +233,6 @@ export const useMultiplayer = () => {
                 console.log('서버에서 받은 currentPiece:', data.gameState.currentPiece);
                 console.log('서버에서 받은 ghostPiece:', data.gameState.ghostPiece);
 
-                // currentPiece가 null이고 게임이 진행 중인 경우 서버에 새로운 조각 요청
-                if (
-                    !data.gameState.currentPiece &&
-                    !data.gameState.gameOver &&
-                    data.gameState.gameStarted
-                ) {
-                    console.log('currentPiece가 null이므로 서버에 새로운 조각 요청');
-                    // 서버에 게임 상태 동기화 요청
-                    if (globalSocket && globalSocket.connected) {
-                        globalSocket.emit('fixGameStateSync', {
-                            playerId: multiplayerState.currentPlayer?.id,
-                        });
-                    }
-                    return; // 현재 업데이트는 무시하고 서버 응답을 기다림
-                }
-
                 // 게임 오버 상태 처리
                 if (data.gameState.gameOver) {
                     console.log('서버에서 게임오버 상태 수신:', data);
@@ -324,31 +307,6 @@ export const useMultiplayer = () => {
             console.log('룸 통계 업데이트:', data);
             if (data.roomStats) {
                 dispatch(updateRoomStats(data.roomStats));
-            }
-        },
-
-        gameStateSyncFixed: (data: SocketData) => {
-            console.log('게임 상태 동기화 수정 완료:', data);
-            if (data.success && data.gameState) {
-                // 수정된 게임 상태로 동기화
-                dispatch(
-                    syncGameState({
-                        board: data.gameState.board,
-                        currentPiece: data.gameState.currentPiece,
-                        nextPiece: data.gameState.nextPiece,
-                        heldPiece: data.gameState.heldPiece,
-                        canHold: data.gameState.canHold,
-                        score: data.gameState.score,
-                        level: data.gameState.level,
-                        lines: data.gameState.linesCleared,
-                        gameOver: data.gameState.gameOver,
-                        paused: data.gameState.paused,
-                        ghostPiece: data.gameState.ghostPiece,
-                    })
-                );
-                console.log('게임 상태 동기화 수정 적용 완료');
-            } else {
-                console.error('게임 상태 동기화 수정 실패:', data.error);
             }
         },
 
@@ -545,15 +503,6 @@ export const useMultiplayer = () => {
         [emitMessage]
     );
 
-    // 게임 상태 동기화 수정 요청
-    const fixGameStateSync = useCallback(
-        (playerId: string) => {
-            console.log('게임 상태 동기화 수정 요청:', playerId);
-            emitMessage('fixGameStateSync', { playerId });
-        },
-        [emitMessage]
-    );
-
     // 룸 게임 시작 (새로운 플로우용)
     const startRoomGame = useCallback(
         (roomId: string): Promise<{ success: boolean; roomId: string }> => {
@@ -675,7 +624,6 @@ export const useMultiplayer = () => {
         getRoomStats,
         getRoomInfo,
         getPlayerInfo,
-        fixGameStateSync,
         startRoomGame,
         handleInput,
         waitForConnection,

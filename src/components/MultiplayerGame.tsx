@@ -33,7 +33,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         leaveAutoRoom,
         isConnected,
         getRoomInfo,
-        fixGameStateSync,
         handleInput,
         startRoomGame,
         socket,
@@ -181,58 +180,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         }
     }, [gameStarted, players.length, currentPlayer?.id, handleStartGame]);
 
-    // 게임 상태 동기화 체크 및 수정
-    useEffect(() => {
-        if (!gameStarted || !currentPlayer?.id) return;
-
-        // 주기적으로 게임 상태 동기화 체크
-        syncCheckTimeoutRef.current = setTimeout(() => {
-            // 게임 오버 상태에서 조각이 있는 경우 체크
-            if (gameOver && gameState?.currentPiece) {
-                console.warn('게임 오버 상태에서 조각이 존재함:', {
-                    currentPiece: gameState.currentPiece.type,
-                    ghostPiece: gameState.ghostPiece?.type,
-                });
-                fixGameStateSync(currentPlayer.id);
-                return;
-            }
-
-            // 현재 조각과 고스트 조각 타입 불일치 체크
-            if (gameState?.currentPiece && gameState?.ghostPiece && !gameOver) {
-                const currentType = gameState.currentPiece.type;
-                const ghostType = gameState.ghostPiece.type;
-
-                if (currentType !== ghostType) {
-                    console.warn('게임 상태 동기화 문제 감지:', {
-                        currentPiece: currentType,
-                        ghostPiece: ghostType,
-                    });
-
-                    // 서버에 동기화 수정 요청
-                    fixGameStateSync(currentPlayer.id);
-                }
-            }
-
-            // 게임 오버 상태에서 조각이 스폰 위치에 있는 경우 체크
-            if (gameOver && gameState?.currentPiece) {
-                const spawnY = gameState.currentPiece.position.y;
-                if (spawnY <= 1) {
-                    // 스폰 위치 근처에 있으면
-                    console.warn('게임 오버 상태에서 조각이 스폰 위치에 있음:', {
-                        position: gameState.currentPiece.position,
-                    });
-                    fixGameStateSync(currentPlayer.id);
-                }
-            }
-        }, 5000); // 5초마다 체크
-
-        return () => {
-            if (syncCheckTimeoutRef.current) {
-                clearTimeout(syncCheckTimeoutRef.current);
-            }
-        };
-    }, [gameStarted, gameOver, currentPlayer?.id, gameState, fixGameStateSync]);
-
     // 플레이어 목록 렌더링 최적화
     const playerList = useMemo(() => {
         if (players.length === 0) {
@@ -332,16 +279,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                         >
                             룸 나가기
                         </button>
-
-                        {gameStarted && !gameOver && currentPlayer?.id && (
-                            <button
-                                onClick={() => fixGameStateSync(currentPlayer.id)}
-                                className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                                title="게임 상태 동기화 수정"
-                            >
-                                동기화 수정
-                            </button>
-                        )}
 
                         {gameStarted && !gameOver && (
                             <button
