@@ -28,7 +28,6 @@ type SocketEvent =
     | 'connect_error'
     | 'playerJoined'
     | 'playerLeft'
-    | 'gameStarted'
     | 'playerScoreUpdate'
     | 'playerGameStateChanged'
     | 'gameStateUpdate'
@@ -121,31 +120,6 @@ export const useMultiplayer = () => {
             }
         },
 
-        gameStarted: (data: SocketData) => {
-            console.log('게임 시작 이벤트:', data);
-            dispatch(setGameStarted(true));
-
-            // 게임 시드가 있으면 시드 기반 게임 시작
-            if (data.gameSeed) {
-                console.log('시드 기반 게임 시작:', data.gameSeed);
-                dispatch(startGameWithSeed({ seed: data.gameSeed }));
-            }
-        },
-
-        roomGameStarted: (data: SocketData) => {
-            console.log('룸 게임 시작:', data);
-            dispatch(setGameStarted(true));
-            // 게임 시작 상태를 Redux에 반영
-            if (data.roomId) {
-                console.log(`룸 ${data.roomId}에서 게임이 시작되었습니다.`);
-            }
-            // 시드가 있으면 시드 기반 게임 시작
-            if (data.gameSeed) {
-                console.log('시드 기반 게임 시작:', data.gameSeed);
-                dispatch(startGameWithSeed({ seed: data.gameSeed }));
-            }
-        },
-
         playerScoreUpdate: (data: SocketData) => {
             console.log('점수 업데이트:', data);
             if (
@@ -205,6 +179,32 @@ export const useMultiplayer = () => {
         gameStateUpdate: (data: SocketData) => {
             console.log('게임 상태 업데이트:', data);
             if (data.gameState) {
+                // 게임 시작 상태 처리
+                if (data.gameState.gameStarted !== undefined) {
+                    if (data.gameState.gameStarted && !multiplayerState.gameStarted) {
+                        console.log('게임 시작 상태 감지:', data.gameState.gameStarted);
+                        dispatch(setGameStarted(true));
+
+                        // 게임 시드가 있으면 시드 기반 게임 시작
+                        if (data.gameState.gameSeed && !tetrisState.gameSeed) {
+                            console.log(
+                                '게임 시드 저장 및 시드 기반 게임 시작:',
+                                data.gameState.gameSeed
+                            );
+                            dispatch(setGameSeed(data.gameState.gameSeed));
+                            dispatch(
+                                startGameWithSeed({ seed: data.gameState.gameSeed })
+                            );
+                        }
+                    } else if (
+                        !data.gameState.gameStarted &&
+                        multiplayerState.gameStarted
+                    ) {
+                        console.log('게임 중지 상태 감지:', data.gameState.gameStarted);
+                        dispatch(setGameStarted(false));
+                    }
+                }
+
                 // 서버 권위적: 시드가 있고 아직 설정되지 않았을 때만 저장
                 if (data.gameState.gameSeed && !tetrisState.gameSeed) {
                     console.log('게임 시드 저장:', data.gameState.gameSeed);
@@ -278,7 +278,7 @@ export const useMultiplayer = () => {
             console.log('룸 게임 상태 수신:', data);
             if (data.gameState) {
                 dispatch(updatePlayers(data.gameState.players));
-                dispatch(setGameStarted(data.gameState.gameStarted));
+                // 게임 시작 상태는 gameStateUpdate에서 처리하므로 여기서는 제거
                 dispatch(setGameOver(data.gameState.gameOver));
             }
         },
@@ -289,7 +289,7 @@ export const useMultiplayer = () => {
                 dispatch(updatePlayers(data.players));
             }
             if (data.gameState) {
-                dispatch(setGameStarted(data.gameState.gameStarted));
+                // 게임 시작 상태는 gameStateUpdate에서 처리하므로 여기서는 제거
                 dispatch(setGameOver(data.gameState.gameOver));
             }
             if (data.playerCount !== undefined) {
