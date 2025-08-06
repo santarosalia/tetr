@@ -119,6 +119,9 @@ export const NextPiece: React.FC = () => {
     };
 
     const renderNextPiece = () => {
+        if (!gameState.nextPiece) {
+            return null;
+        }
         const shape = TETROMINO_SHAPES[gameState.nextPiece][0];
         const rows = shape.length;
         const cols = shape[0].length;

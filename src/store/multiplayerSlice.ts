@@ -1,7 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import {
     Player,
-    GameState,
     RoomInfo,
     MultiplayerState,
     PlayerScoreUpdate,
