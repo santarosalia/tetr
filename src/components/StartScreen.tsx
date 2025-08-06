@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { startGame } from '../store/tetrisSlice';
 import { useMultiplayer } from '../hooks/useMultiplayer';
 import { updateCurrentPlayer } from '../store/multiplayerSlice';
 
@@ -9,7 +8,7 @@ interface StartScreenProps {
     onMultiplayer: (roomId: string) => void;
 }
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onMultiplayer }) => {
+export const StartScreen: React.FC<StartScreenProps> = ({ onMultiplayer }) => {
     const dispatch = useDispatch();
     const { joinAutoRoom, isConnected } = useMultiplayer();
     const [playerName, setPlayerName] = useState(
@@ -17,10 +16,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onMultiplayer
     );
     const [isJoining, setIsJoining] = useState(false);
 
-    const handleStartGame = () => {
-        dispatch(startGame());
-        onStart();
-    };
+
 
     const handleMultiplayer = async () => {
         if (!playerName.trim()) {

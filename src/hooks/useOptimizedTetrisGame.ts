@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useMemo } from 'react';
-import { useAppDispatch, useAppSelector } from './redux';
+import { useAppSelector } from './redux';
 import { useMultiplayer } from './useMultiplayer';
 
 // 메모이제이션된 게임 상태 선택자
@@ -16,9 +16,8 @@ const KEY_REPEAT_DELAY = 100; // 초기 지연
 const KEY_REPEAT_INTERVAL = 50; // 반복 간격
 
 export const useOptimizedTetrisGame = () => {
-    const dispatch = useAppDispatch();
     const gameState = useAppSelector(selectGameState);
-    const { handleInput, currentPlayer } = useMultiplayer();
+    const { handleInput } = useMultiplayer();
 
     // ref들을 사용하여 불필요한 리렌더링 방지
     const keyRepeatRef = useRef<{ [key: string]: number }>({});
@@ -26,40 +25,28 @@ export const useOptimizedTetrisGame = () => {
 
     // 서버에 입력 전송하는 함수들
     const sendMoveLeft = useCallback(() => {
-        if (currentPlayer?.id) {
             handleInput('move_left');
-        }
-    }, [handleInput, currentPlayer?.id]);
+    }, [handleInput]);
 
     const sendMoveRight = useCallback(() => {
-        if (currentPlayer?.id) {
-            handleInput('move_right');
-        }
-    }, [handleInput, currentPlayer?.id]);
+        handleInput('move_right');
+    }, [handleInput]);
 
     const sendMoveDown = useCallback(() => {
-        if (currentPlayer?.id) {
-            handleInput('move_down');
-        }
-    }, [handleInput, currentPlayer?.id]);
+        handleInput('move_down');
+    }, [handleInput]);
 
     const sendRotate = useCallback(() => {
-        if (currentPlayer?.id) {
-            handleInput('rotate');
-        }
-    }, [handleInput, currentPlayer?.id]);
+        handleInput('rotate');
+    }, [handleInput]);
 
     const sendHardDrop = useCallback(() => {
-        if (currentPlayer?.id) {
-            handleInput('hard_drop');
-        }
-    }, [handleInput, currentPlayer?.id]);
+        handleInput('hard_drop');
+    }, [handleInput]);
 
     const sendHold = useCallback(() => {
-        if (currentPlayer?.id) {
-            handleInput('hold');
-        }
-    }, [handleInput, currentPlayer?.id]);
+        handleInput('hold');
+    }, [handleInput]);
 
     // 키 반복 처리 함수 (메모이제이션)
     const handleKeyRepeat = useCallback(

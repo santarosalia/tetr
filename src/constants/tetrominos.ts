@@ -1,4 +1,4 @@
-import { TetrominoType } from '../types/tetris';
+import { TetrominoType } from '../types/shared';
 
 export const TETROMINO_SHAPES: Record<TetrominoType, number[][][]> = {
     I: [

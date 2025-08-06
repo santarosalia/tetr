@@ -31,8 +31,8 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
     const { leaveAutoRoom, isConnected, handleInput } = useMultiplayer();
 
     const [isMobileDevice, setIsMobileDevice] = useState(false);
-    const [isPortraitMode, setIsPortraitMode] = useState(false);
-    const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>('large');
+    const [_isPortraitMode, setIsPortraitMode] = useState(false);
+    const [_screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>('large');
     const [windowSize, setWindowSize] = useState({
         width: GAME_WIDTH + UI_PANEL_WIDTH + HELD_PIECE_WIDTH + 40,
         height: GAME_HEIGHT,

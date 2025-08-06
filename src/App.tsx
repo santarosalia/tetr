@@ -21,7 +21,6 @@ function App() {
     // Redux 훅을 사용하여 게임 로직 초기화
 
     const gameState = useSelector((state: RootState) => state.tetris);
-    const multiplayerState = useSelector((state: RootState) => state.multiplayer);
     const { isGameStarted, gameOver, score, level, lines } = gameState;
     const dispatch = useDispatch();
 

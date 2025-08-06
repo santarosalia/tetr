@@ -78,7 +78,7 @@ const multiplayerSlice = createSlice({
         clearError: (state) => {
             state.error = null;
         },
-        resetMultiplayer: (state) => {
+        resetMultiplayer: (_state) => {
             return initialState;
         },
         joinRoom: (
@@ -89,7 +89,7 @@ const multiplayerSlice = createSlice({
             state.isLoading = false;
             state.error = null;
         },
-        leaveRoom: (state) => {
+        leaveRoom: (_state) => {
             return initialState;
         },
         startMultiplayerGame: (state, action: PayloadAction<{ roomId: string }>) => {

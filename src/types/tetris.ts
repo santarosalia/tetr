@@ -1,4 +1,4 @@
-import { TetrominoType, Position, Tetromino, GameConfig } from './shared';
+import { TetrominoType, Tetromino, GameConfig } from './shared';
 
 export interface GameState {
     board: number[][];

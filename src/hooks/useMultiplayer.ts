@@ -11,7 +11,6 @@ import {
     setPlayerGameOver,
     updateRoomInfo,
     updateRoomPlayerCount,
-    updateRoomStats,
 } from '../store/multiplayerSlice';
 import { SocketData, JoinRoomResponse } from '../types/multiplayer';
 import { startGameWithSeed, setGameSeed, syncGameState } from '../store/tetrisSlice';
