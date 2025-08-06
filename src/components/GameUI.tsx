@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppSelector, useAppDispatch } from '../hooks/redux';
 import { TETROMINO_SHAPES } from '../constants/tetrominos';
-import { togglePause, startGame } from '../store/tetrisSlice';
+import { startGame } from '../store/tetrisSlice';
 import { isMobile } from '../utils/mobileDetection';
 
 // 레벨에 따른 드롭 간격 계산 함수 (useTetrisGame과 동일)
@@ -164,9 +164,7 @@ export const GameUI: React.FC = () => {
     const dispatch = useAppDispatch();
     const gameState = useAppSelector((state) => state.tetris);
 
-    const handlePause = () => {
-        dispatch(togglePause());
-    };
+    const handlePause = () => {};
 
     const handleReset = () => {
         dispatch(startGame());

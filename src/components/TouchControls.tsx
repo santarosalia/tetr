@@ -1,12 +1,5 @@
 import React, { useCallback, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import {
-    movePiece,
-    rotatePiece,
-    hardDrop,
-    holdPiece,
-    togglePause,
-} from '../store/tetrisSlice';
 
 interface TouchControlsProps {
     isVisible: boolean;
@@ -38,7 +31,6 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
         if (onMoveLeft) {
             onMoveLeft();
         } else {
-            dispatch(movePiece({ offsetX: -1, offsetY: 0 }));
         }
     }, [dispatch, onMoveLeft]);
 
@@ -46,7 +38,6 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
         if (onMoveRight) {
             onMoveRight();
         } else {
-            dispatch(movePiece({ offsetX: 1, offsetY: 0 }));
         }
     }, [dispatch, onMoveRight]);
 
@@ -54,7 +45,6 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
         if (onMoveDown) {
             onMoveDown();
         } else {
-            dispatch(movePiece({ offsetX: 0, offsetY: 1 }));
         }
     }, [dispatch, onMoveDown]);
 
@@ -62,7 +52,6 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
         if (onRotate) {
             onRotate();
         } else {
-            dispatch(rotatePiece());
         }
     }, [dispatch, onRotate]);
 
@@ -70,7 +59,6 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
         if (onHardDrop) {
             onHardDrop();
         } else {
-            dispatch(hardDrop());
         }
     }, [dispatch, onHardDrop]);
 
@@ -78,7 +66,6 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
         if (onHold) {
             onHold();
         } else {
-            dispatch(holdPiece());
         }
     }, [dispatch, onHold]);
 
@@ -86,7 +73,6 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
         if (onPause) {
             onPause();
         } else {
-            dispatch(togglePause());
         }
     }, [dispatch, onPause]);
 

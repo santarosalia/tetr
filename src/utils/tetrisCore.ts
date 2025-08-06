@@ -1,46 +1,15 @@
 import { TetrominoType, Tetromino } from '../types/shared';
-import { TETROMINO_SHAPES, TETROMINO_SPAWN_POSITIONS } from '../constants/tetrominos';
+import {
+    TETROMINO_SHAPES,
+    TETROMINO_SPAWN_POSITIONS,
+    SRS_WALL_KICK_DATA,
+} from '../constants/tetrominos';
 
 export const BOARD_WIDTH = 10;
 export const BOARD_HEIGHT = 20;
 export const BLOCK_SIZE = 30;
 
-// 7-bag 시스템을 위한 전역 변수
-let tetrominoBag: TetrominoType[] = [];
-let bagIndex = 0;
-
-// 7-bag 시스템 초기화
-export function initializeTetrominoBag(): void {
-    const types: TetrominoType[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
-    tetrominoBag = [...types];
-    // 가방을 랜덤하게 섞기
-    for (let i = tetrominoBag.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [tetrominoBag[i], tetrominoBag[j]] = [tetrominoBag[j], tetrominoBag[i]];
-    }
-    bagIndex = 0;
-}
-
-// 7-bag 시스템에서 다음 테트로미노 가져오기
-export function getNextTetrominoFromBag(): TetrominoType {
-    // 가방이 비어있거나 모든 테트로미노를 사용했으면 새로운 가방 생성
-    if (bagIndex >= tetrominoBag.length) {
-        const types: TetrominoType[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
-        tetrominoBag = [...types];
-        // 새로운 가방을 랜덤하게 섞기
-        for (let i = tetrominoBag.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [tetrominoBag[i], tetrominoBag[j]] = [tetrominoBag[j], tetrominoBag[i]];
-        }
-        bagIndex = 0;
-    }
-
-    // 현재 인덱스의 테트로미노를 가져오고 인덱스 증가
-    const tetromino = tetrominoBag[bagIndex];
-    bagIndex++;
-
-    return tetromino;
-}
+// 서버 권위적: 클라이언트는 서버에서 받은 피스만 사용하므로 7-bag 시스템 제거
 
 export function createEmptyBoard(): number[][] {
     return Array(BOARD_HEIGHT)
@@ -48,6 +17,7 @@ export function createEmptyBoard(): number[][] {
         .map(() => Array(BOARD_WIDTH).fill(0));
 }
 
+// 테트리스 표준: 테트로미노 생성 (스폰 위치에서 시작) - 렌더링용
 export function createTetromino(type: TetrominoType): Tetromino {
     const spawnPos = TETROMINO_SPAWN_POSITIONS[type];
     return {
@@ -58,10 +28,13 @@ export function createTetromino(type: TetrominoType): Tetromino {
     };
 }
 
+// 서버 권위적: 랜덤 테트로미노 타입 가져오기 (서버에서 관리)
 export function getRandomTetrominoType(): TetrominoType {
-    return getNextTetrominoFromBag();
+    const types: TetrominoType[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+    return types[Math.floor(Math.random() * types.length)];
 }
 
+// 렌더링용 회전 함수
 export function rotateTetromino(tetromino: Tetromino): Tetromino {
     const newRotation = (tetromino.rotation + 1) % 4;
     return {
@@ -71,6 +44,7 @@ export function rotateTetromino(tetromino: Tetromino): Tetromino {
     };
 }
 
+// SRS (Super Rotation System) 벽킥 구현 - 렌더링용
 export function rotateTetrominoWithWallKick(
     tetromino: Tetromino,
     board: number[][]
@@ -82,30 +56,33 @@ export function rotateTetrominoWithWallKick(
         return rotatedPiece;
     }
 
-    // 벽킥 시도 (좌우 이동)
-    const wallKickOffsets = [
-        { x: -1, y: 0 }, // 왼쪽으로 1칸
-        { x: 1, y: 0 }, // 오른쪽으로 1칸
-        { x: -2, y: 0 }, // 왼쪽으로 2칸
-        { x: 2, y: 0 }, // 오른쪽으로 2칸
-        { x: -1, y: -1 }, // 왼쪽으로 1칸, 위로 1칸
-        { x: 1, y: -1 }, // 오른쪽으로 1칸, 위로 1칸
-        { x: 0, y: -1 }, // 위로 1칸
-        { x: -1, y: 1 }, // 왼쪽으로 1칸, 아래로 1칸
-        { x: 1, y: 1 }, // 오른쪽으로 1칸, 아래로 1칸
-    ];
+    // SRS 벽킥 데이터 가져오기
+    const wallKickData = SRS_WALL_KICK_DATA[tetromino.type];
+    if (!wallKickData || wallKickData.length === 0) {
+        // O 피스는 회전하지 않으므로 null 반환
+        return null;
+    }
 
-    for (const offset of wallKickOffsets) {
-        const kickedPiece = {
-            ...rotatedPiece,
-            position: {
-                x: rotatedPiece.position.x + offset.x,
-                y: rotatedPiece.position.y + offset.y,
-            },
-        };
+    // 현재 회전에서 다음 회전으로의 벽킥 테스트
+    const currentRotation = tetromino.rotation;
+    const nextRotation = rotatedPiece.rotation;
+    const kickIndex = currentRotation * 2 + (nextRotation > currentRotation ? 0 : 1);
 
-        if (isValidPosition(kickedPiece, board)) {
-            return kickedPiece;
+    if (kickIndex < wallKickData.length) {
+        const kicks = wallKickData[kickIndex];
+
+        for (const [offsetX, offsetY] of kicks) {
+            const kickedPiece = {
+                ...rotatedPiece,
+                position: {
+                    x: rotatedPiece.position.x + offsetX,
+                    y: rotatedPiece.position.y + offsetY,
+                },
+            };
+
+            if (isValidPosition(kickedPiece, board)) {
+                return kickedPiece;
+            }
         }
     }
 
@@ -113,6 +90,7 @@ export function rotateTetrominoWithWallKick(
     return null;
 }
 
+// 렌더링용 위치 검증 함수
 export function isValidPosition(
     tetromino: Tetromino,
     board: number[][],
@@ -143,100 +121,10 @@ export function isValidPosition(
     return true;
 }
 
-export function placeTetromino(tetromino: Tetromino, board: number[][]): number[][] {
-    const newBoard = board.map((row) => [...row]);
-    const { shape, position } = tetromino;
-
-    for (let y = 0; y < shape.length; y++) {
-        for (let x = 0; x < shape[y].length; x++) {
-            if (shape[y][x]) {
-                const boardX = position.x + x;
-                const boardY = position.y + y;
-                if (boardY >= 0) {
-                    newBoard[boardY][boardX] = 1;
-                }
-            }
-        }
-    }
-
-    return newBoard;
-}
-
-export function clearLines(board: number[][]): {
-    newBoard: number[][];
-    linesCleared: number;
-} {
-    const newBoard = board.filter((row) => row.some((cell) => cell === 0));
-    const linesCleared = board.length - newBoard.length;
-
-    // Add empty lines at the top
-    while (newBoard.length < BOARD_HEIGHT) {
-        newBoard.unshift(Array(BOARD_WIDTH).fill(0));
-    }
-
-    return { newBoard, linesCleared };
-}
-
-export function moveTetromino(
-    tetromino: Tetromino,
-    board: number[][],
-    offsetX: number,
-    offsetY: number
-): Tetromino | null {
-    if (isValidPosition(tetromino, board, offsetX, offsetY)) {
-        return {
-            ...tetromino,
-            position: {
-                x: tetromino.position.x + offsetX,
-                y: tetromino.position.y + offsetY,
-            },
-        };
-    }
-    return null;
-}
-
-export function dropTetromino(tetromino: Tetromino, board: number[][]): Tetromino {
-    let droppedTetromino = tetromino;
-    while (isValidPosition(droppedTetromino, board, 0, 1)) {
-        droppedTetromino = {
-            ...droppedTetromino,
-            position: {
-                x: droppedTetromino.position.x,
-                y: droppedTetromino.position.y + 1,
-            },
-        };
-    }
-    return droppedTetromino;
-}
-
-export function calculateScore(linesCleared: number, level: number): number {
-    const lineScores = [0, 100, 300, 500, 800];
-    const baseScore = lineScores[linesCleared];
-
-    // 레벨을 2단위로 나누어 점수 배율 계산
-    // 레벨 0-1: 1배, 레벨 2-3: 1.5배, 레벨 4-5: 2배, 레벨 6-7: 2.5배...
-    const levelGroup = Math.floor(level / 2);
-    const levelMultiplier = 1 + levelGroup * 0.5;
-
-    return Math.floor(baseScore * levelMultiplier);
-}
-
-export function calculateHardDropBonus(level: number, dropDistance: number): number {
-    // 하드 드롭 거리에 따른 보너스 점수 (레벨을 2단위로 나누어 계산)
-    const baseBonus = dropDistance * 2;
-    const levelGroup = Math.floor(level / 2);
-    const levelMultiplier = 1 + levelGroup * 0.3;
-
-    return Math.floor(baseBonus * levelMultiplier);
-}
-
-export function calculateLevel(lines: number): number {
-    return Math.floor(lines / 10);
-}
-
+// 렌더링용 고스트 피스 계산 함수
 export function getGhostPiece(tetromino: Tetromino, board: number[][]): Tetromino {
     // 현재 피스의 떨어질 위치를 계산
-    let ghostPosition = { ...tetromino.position };
+    const ghostPosition = { ...tetromino.position };
 
     // 아래로 이동할 수 있는 최대 거리를 찾음
     while (
@@ -249,62 +137,4 @@ export function getGhostPiece(tetromino: Tetromino, board: number[][]): Tetromin
         ...tetromino,
         position: ghostPosition,
     };
-}
-
-// 레벨에 따른 드롭 간격 계산
-export function calculateDropInterval(
-    level: number,
-    distanceToBottom: number = 0
-): number {
-    // 표준 테트리스 속도 공식: (0.8 - ((level - 1) * 0.007))^(level - 1) * 1000
-    // 최소 50ms, 최대 1000ms
-    if (level <= 0) return 1000;
-    if (level >= 29) return 50;
-
-    const baseInterval = Math.pow(0.8 - (level - 1) * 0.007, level - 1) * 1000;
-    let interval = Math.max(50, Math.min(1000, baseInterval));
-
-    // 바닥까지의 거리가 0이면 인터벌을 늘림 (더 천천히 떨어지도록)
-    if (distanceToBottom === 0) {
-        interval = Math.min(1000); // 1초로 고정
-    }
-
-    return interval;
-}
-
-// 바닥까지의 거리 계산
-export function calculateDistanceToBottom(piece: Tetromino, board: number[][]): number {
-    if (!piece) return 0;
-
-    let distance = 0;
-
-    // 아래로 이동할 수 있는 최대 거리를 찾음
-    while (isValidPosition(piece, board, 0, distance + 1)) {
-        distance++;
-    }
-
-    return distance;
-}
-
-// 라인 클리어 및 점수 계산
-export function clearLinesAndCalculateScore(
-    board: number[][],
-    level: number
-): { newBoard: number[][]; linesCleared: number; score: number } {
-    const { newBoard, linesCleared } = clearLines(board);
-    const score = calculateScore(linesCleared, level);
-
-    return { newBoard, linesCleared, score };
-}
-
-// 하드 드롭
-export function hardDrop(
-    currentPiece: Tetromino,
-    board: number[][]
-): { droppedPiece: Tetromino; dropDistance: number } {
-    const originalY = currentPiece.position.y;
-    const droppedPiece = dropTetromino(currentPiece, board);
-    const dropDistance = droppedPiece.position.y - originalY;
-
-    return { droppedPiece, dropDistance };
 }

@@ -273,6 +273,7 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
 
         // Draw current piece
         if (gameState.currentPiece) {
+            console.log('렌더링할 currentPiece:', gameState.currentPiece);
             const pieceGraphics = new PIXI.Graphics();
             const { shape, position } = gameState.currentPiece;
             const color = TETROMINO_COLORS[gameState.currentPiece.type];
@@ -293,6 +294,8 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
                 }
             }
             app.stage.addChild(pieceGraphics);
+        } else {
+            console.log('currentPiece가 없습니다:', gameState.currentPiece);
         }
 
         // Draw ghost piece

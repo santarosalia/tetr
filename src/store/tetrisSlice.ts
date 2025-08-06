@@ -1,30 +1,19 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { GameState, Tetromino } from '../types/tetris';
-import {
-    createEmptyBoard,
-    createTetromino,
-    getRandomTetrominoType,
-    initializeTetrominoBag,
-    rotateTetrominoWithWallKick,
-    isValidPosition,
-    placeTetromino,
-    clearLines,
-    moveTetromino,
-    dropTetromino,
-    calculateScore,
-    calculateLevel,
-    calculateHardDropBonus,
-    getGhostPiece,
-} from '../utils/tetrisLogic';
+import { GameState } from '../types/tetris';
+import { Tetromino, TetrominoType } from '../types/shared';
 
 const initialState: GameState & {
     lastPlacedPiece: Tetromino | null;
     isGameStarted: boolean;
     ghostPiece: Tetromino | null;
+    gameSeed?: number;
+    nextPieces: TetrominoType[]; // 서버 권위적: 서버에서 받은 다음 피스 큐
 } = {
-    board: createEmptyBoard(),
+    board: Array(20)
+        .fill(null)
+        .map(() => Array(10).fill(0)),
     currentPiece: null,
-    nextPiece: getRandomTetrominoType(),
+    nextPiece: 'I',
     heldPiece: null,
     canHold: true,
     score: 0,
@@ -35,19 +24,22 @@ const initialState: GameState & {
     lastPlacedPiece: null,
     isGameStarted: false,
     ghostPiece: null,
+    gameSeed: undefined,
+    nextPieces: [], // 서버에서 받은 다음 피스 큐 초기화
 };
 
 const tetrisSlice = createSlice({
     name: 'tetris',
     initialState,
     reducers: {
+        // 서버 권위적: 클라이언트는 서버 상태만 동기화
         startGame: (state) => {
-            // 7-bag 시스템 초기화
-            initializeTetrominoBag();
             state.isGameStarted = true;
-            state.board = createEmptyBoard();
+            state.board = Array(20)
+                .fill(null)
+                .map(() => Array(10).fill(0));
             state.currentPiece = null;
-            state.nextPiece = getRandomTetrominoType();
+            state.nextPiece = 'I';
             state.heldPiece = null;
             state.canHold = true;
             state.score = 0;
@@ -57,121 +49,17 @@ const tetrisSlice = createSlice({
             state.paused = false;
             state.lastPlacedPiece = null;
             state.ghostPiece = null;
+            state.nextPieces = [];
         },
 
-        spawnNewPiece: (state) => {
-            const newPiece = createTetromino(state.nextPiece);
-            const newNextPiece = getRandomTetrominoType();
-
-            state.currentPiece = newPiece;
-            state.nextPiece = newNextPiece;
-            state.canHold = true;
-            // 고스트 블록 업데이트
-            state.ghostPiece = getGhostPiece(newPiece, state.board);
-        },
-
-        movePiece: (
-            state,
-            action: PayloadAction<{ offsetX: number; offsetY: number }>
-        ) => {
-            if (!state.currentPiece || state.gameOver || state.paused) return;
-
-            const { offsetX, offsetY } = action.payload;
-            const movedPiece = moveTetromino(
-                state.currentPiece,
-                state.board,
-                offsetX,
-                offsetY
-            );
-
-            if (movedPiece) {
-                state.currentPiece = movedPiece;
-                // 고스트 블록 업데이트
-                state.ghostPiece = getGhostPiece(movedPiece, state.board);
-            }
-        },
-
-        rotatePiece: (state) => {
-            if (!state.currentPiece || state.gameOver || state.paused) return;
-
-            const rotatedPiece = rotateTetrominoWithWallKick(
-                state.currentPiece,
-                state.board
-            );
-            if (rotatedPiece) {
-                state.currentPiece = rotatedPiece;
-                // 고스트 블록 업데이트
-                state.ghostPiece = getGhostPiece(rotatedPiece, state.board);
-            }
-        },
-
-        hardDrop: (state) => {
-            if (!state.currentPiece || state.gameOver || state.paused) return;
-
-            const droppedPiece = dropTetromino(state.currentPiece, state.board);
-            const dropDistance = droppedPiece.position.y - state.currentPiece.position.y;
-            const newBoard = placeTetromino(droppedPiece, state.board);
-            const { newBoard: clearedBoard, linesCleared } = clearLines(newBoard);
-            const newScore =
-                state.score +
-                calculateScore(linesCleared, state.level) +
-                calculateHardDropBonus(state.level, dropDistance);
-            const newLines = state.lines + linesCleared;
-            // 라인이 클리어될 때만 레벨을 자동 계산, 그렇지 않으면 현재 레벨 유지
-            const newLevel = linesCleared > 0 ? calculateLevel(newLines) : state.level;
-
-            // 배치된 피스 정보 저장
-            state.lastPlacedPiece = droppedPiece;
-
-            state.board = clearedBoard;
+        startGameWithSeed: (state, action: PayloadAction<{ seed: number }>) => {
+            console.log('Client: Starting game with seed:', action.payload.seed);
+            state.isGameStarted = true;
+            state.board = Array(20)
+                .fill(null)
+                .map(() => Array(10).fill(0));
             state.currentPiece = null;
-            state.ghostPiece = null;
-            state.score = newScore;
-            state.level = newLevel;
-            state.lines = newLines;
-        },
-
-        dropPiece: (state) => {
-            if (!state.currentPiece || state.gameOver || state.paused) return;
-
-            const movedPiece = moveTetromino(state.currentPiece, state.board, 0, 1);
-            if (movedPiece) {
-                state.currentPiece = movedPiece;
-                // 고스트 블록 업데이트
-                state.ghostPiece = getGhostPiece(movedPiece, state.board);
-            } else {
-                // Piece can't move down, place it
-                const newBoard = placeTetromino(state.currentPiece, state.board);
-                const { newBoard: clearedBoard, linesCleared } = clearLines(newBoard);
-                const newScore = state.score + calculateScore(linesCleared, state.level);
-                const newLines = state.lines + linesCleared;
-                // 라인이 클리어될 때만 레벨을 자동 계산, 그렇지 않으면 현재 레벨 유지
-                const newLevel =
-                    linesCleared > 0 ? calculateLevel(newLines) : state.level;
-
-                // 배치된 피스 정보 저장
-                state.lastPlacedPiece = state.currentPiece;
-
-                state.board = clearedBoard;
-                state.currentPiece = null;
-                state.ghostPiece = null;
-                state.score = newScore;
-                state.level = newLevel;
-                state.lines = newLines;
-            }
-        },
-
-        togglePause: (state) => {
-            if (state.gameOver) return;
-            state.paused = !state.paused;
-        },
-
-        resetGame: (state) => {
-            // 7-bag 시스템 초기화
-            initializeTetrominoBag();
-            state.board = createEmptyBoard();
-            state.currentPiece = null;
-            state.nextPiece = getRandomTetrominoType();
+            state.nextPiece = 'I';
             state.heldPiece = null;
             state.canHold = true;
             state.score = 0;
@@ -180,20 +68,22 @@ const tetrisSlice = createSlice({
             state.gameOver = false;
             state.paused = false;
             state.lastPlacedPiece = null;
-            state.isGameStarted = false;
             state.ghostPiece = null;
+            state.gameSeed = action.payload.seed;
+            state.nextPieces = [];
+            console.log('Client: Game state initialized with seed:', state.gameSeed);
         },
 
-        checkGameOver: (state) => {
-            // 게임 오버는 서버에서 결정하므로 클라이언트에서는 제거
-            // if (state.currentPiece && !isValidPosition(state.currentPiece, state.board)) {
-            //     state.gameOver = true;
-            // }
-        },
+        // 서버 권위적: 클라이언트는 게임 로직을 처리하지 않음
+        // 모든 게임 로직은 서버에서 처리하고 클라이언트는 상태만 동기화
 
-        // 서버에서 받은 게임 오버 상태를 설정하는 액션 추가
         setGameOver: (state, action: PayloadAction<boolean>) => {
             state.gameOver = action.payload;
+        },
+
+        setGameSeed: (state, action: PayloadAction<number>) => {
+            state.gameSeed = action.payload;
+            console.log('Client: Game seed set to:', action.payload);
         },
 
         setLevel: (state, action: PayloadAction<number>) => {
@@ -205,47 +95,126 @@ const tetrisSlice = createSlice({
             state.lastPlacedPiece = null;
         },
 
-        holdPiece: (state) => {
-            if (!state.currentPiece || !state.canHold || state.gameOver || state.paused)
-                return;
+        // 서버와 동기화를 위한 액션들 (서버 권위적)
+        syncGameState: (
+            state,
+            action: PayloadAction<{
+                board?: number[][];
+                currentPiece?: Tetromino | null;
+                nextPiece?: TetrominoType;
+                heldPiece?: TetrominoType | null;
+                canHold?: boolean;
+                score?: number;
+                level?: number;
+                lines?: number;
+                gameOver?: boolean;
+                paused?: boolean;
+                ghostPiece?: Tetromino | null;
+                nextPieces?: TetrominoType[]; // 서버에서 받은 다음 피스 큐
+            }>
+        ) => {
+            // 서버 상태와 동기화
+            if (action.payload.board !== undefined) state.board = action.payload.board;
+            if (action.payload.currentPiece !== undefined)
+                state.currentPiece = action.payload.currentPiece;
+            if (action.payload.nextPiece !== undefined)
+                state.nextPiece = action.payload.nextPiece;
+            if (action.payload.heldPiece !== undefined)
+                state.heldPiece = action.payload.heldPiece;
+            if (action.payload.canHold !== undefined)
+                state.canHold = action.payload.canHold;
+            if (action.payload.score !== undefined) state.score = action.payload.score;
+            if (action.payload.level !== undefined) state.level = action.payload.level;
+            if (action.payload.lines !== undefined) state.lines = action.payload.lines;
+            if (action.payload.gameOver !== undefined)
+                state.gameOver = action.payload.gameOver;
+            if (action.payload.paused !== undefined) state.paused = action.payload.paused;
+            if (action.payload.ghostPiece !== undefined)
+                state.ghostPiece = action.payload.ghostPiece;
+            if (action.payload.nextPieces !== undefined)
+                state.nextPieces = action.payload.nextPieces;
+        },
 
-            const currentType = state.currentPiece.type;
+        // 개별 상태 업데이트 액션들 (서버 동기화용)
+        updateBoard: (state, action: PayloadAction<number[][]>) => {
+            state.board = action.payload;
+        },
 
-            if (state.heldPiece) {
-                // 저장된 블록이 있으면 교체
-                const newPiece = createTetromino(state.heldPiece);
-                state.currentPiece = newPiece;
-                state.heldPiece = currentType;
-            } else {
-                // 저장된 블록이 없으면 현재 블록을 저장하고 다음 블록으로 교체
-                state.heldPiece = currentType;
-                const newPiece = createTetromino(state.nextPiece);
-                const newNextPiece = getRandomTetrominoType();
-                state.currentPiece = newPiece;
-                state.nextPiece = newNextPiece;
-            }
+        updateCurrentPiece: (state, action: PayloadAction<Tetromino | null>) => {
+            state.currentPiece = action.payload;
+        },
 
-            // 고스트 블록 업데이트
-            state.ghostPiece = getGhostPiece(state.currentPiece, state.board);
-            state.canHold = false;
+        updateNextPiece: (state, action: PayloadAction<TetrominoType>) => {
+            state.nextPiece = action.payload;
+        },
+
+        updateHeldPiece: (state, action: PayloadAction<TetrominoType | null>) => {
+            state.heldPiece = action.payload;
+        },
+
+        updateScore: (state, action: PayloadAction<number>) => {
+            state.score = action.payload;
+        },
+
+        updateLevel: (state, action: PayloadAction<number>) => {
+            state.level = action.payload;
+        },
+
+        updateLines: (state, action: PayloadAction<number>) => {
+            state.lines = action.payload;
+        },
+
+        setPaused: (state, action: PayloadAction<boolean>) => {
+            state.paused = action.payload;
+        },
+
+        // 전체 게임 상태 업데이트 (서버 동기화용)
+        updateGameState: (
+            state,
+            action: PayloadAction<{
+                board: number[][];
+                currentPiece: Tetromino | null;
+                nextPiece: TetrominoType;
+                heldPiece: TetrominoType | null;
+                canHold: boolean;
+                score: number;
+                level: number;
+                lines: number;
+                gameOver: boolean;
+                paused: boolean;
+            }>
+        ) => {
+            state.board = action.payload.board;
+            state.currentPiece = action.payload.currentPiece;
+            state.nextPiece = action.payload.nextPiece;
+            state.heldPiece = action.payload.heldPiece;
+            state.canHold = action.payload.canHold;
+            state.score = action.payload.score;
+            state.level = action.payload.level;
+            state.lines = action.payload.lines;
+            state.gameOver = action.payload.gameOver;
+            state.paused = action.payload.paused;
         },
     },
 });
 
 export const {
     startGame,
-    spawnNewPiece,
-    movePiece,
-    rotatePiece,
-    hardDrop,
-    dropPiece,
-    togglePause,
-    resetGame,
-    checkGameOver,
+    startGameWithSeed,
+    setGameOver,
+    setGameSeed,
     setLevel,
     clearLastPlacedPiece,
-    holdPiece,
-    setGameOver,
+    syncGameState,
+    updateBoard,
+    updateCurrentPiece,
+    updateNextPiece,
+    updateHeldPiece,
+    updateScore,
+    updateLevel,
+    updateLines,
+    setPaused,
+    updateGameState,
 } = tetrisSlice.actions;
 
 export default tetrisSlice.reducer;

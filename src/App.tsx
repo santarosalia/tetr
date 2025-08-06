@@ -6,7 +6,6 @@ import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
 import { TouchControls } from './components/TouchControls';
 import { MultiplayerGame } from './components/MultiplayerGame';
-import { useTetrisGame } from './hooks/useTetrisGame';
 import { RootState } from './store';
 import { startGame } from './store/tetrisSlice';
 import { isMobile, isPortrait, getScreenSize } from './utils/mobileDetection';
@@ -20,7 +19,6 @@ type GameMode = 'menu' | 'singleplayer' | 'multiplayer_game';
 
 function App() {
     // Redux 훅을 사용하여 게임 로직 초기화
-    useTetrisGame();
 
     const gameState = useSelector((state: RootState) => state.tetris);
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
@@ -95,7 +93,6 @@ function App() {
     };
 
     // 멀티플레이 게임 중인지 확인
-    const isMultiplayerGame = gameMode === 'multiplayer_game';
 
     return (
         <div className="w-screen h-screen bg-black flex justify-center items-center overflow-hidden">

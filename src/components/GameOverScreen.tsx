@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
-import { resetGame, startGame } from '../store/tetrisSlice';
+import { startGame } from '../store/tetrisSlice';
 
 interface GameOverScreenProps {
     finalScore: number;
@@ -28,7 +28,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                 {/* 게임 오버 제목 */}
                 <div className="text-center mb-6">
                     <h1 className="text-4xl font-bold text-red-500 mb-2">GAME OVER</h1>
-                    <p className="text-gray-400">게임이 종료되었습니다</p>
+                    <p className="text-gray-400 mb-2">게임이 종료되었습니다</p>
+                    <p className="text-sm text-gray-500">
+                        새로운 피스를 스폰할 수 없습니다
+                    </p>
                 </div>
 
                 {/* 최종 결과 */}
@@ -53,6 +56,25 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                     </div>
                 </div>
 
+                {/* 성과 평가 */}
+                <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+                    <h3 className="text-lg font-bold text-gray-200 mb-2">성과 평가</h3>
+                    <div className="space-y-2 text-sm">
+                        {finalScore >= 10000 && (
+                            <p className="text-green-400">🎉 훌륭한 성과입니다!</p>
+                        )}
+                        {finalScore >= 5000 && finalScore < 10000 && (
+                            <p className="text-yellow-400">👍 좋은 성과입니다!</p>
+                        )}
+                        {finalScore < 5000 && (
+                            <p className="text-blue-400">💪 더 연습해보세요!</p>
+                        )}
+                        {finalLines >= 100 && (
+                            <p className="text-purple-400">🔥 라인 클리어 마스터!</p>
+                        )}
+                    </div>
+                </div>
+
                 {/* 버튼들 */}
                 <div className="space-y-3">
                     <button
@@ -62,7 +84,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                         다시 시작
                     </button>
                     <button
-                        onClick={() => dispatch(resetGame())}
+                        onClick={() => {}}
                         className="w-full px-6 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 transition-all duration-200"
                     >
                         메인 화면으로

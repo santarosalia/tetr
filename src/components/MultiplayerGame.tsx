@@ -28,8 +28,19 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
     const { players, currentPlayer, gameStarted, gameOver, gameState, roomInfo } =
         multiplayerState;
-    const { sendPlayerInput, leaveAutoRoom, isConnected, getRoomPlayers, getRoomInfo } =
-        useMultiplayer();
+    const {
+        sendPlayerInput,
+        leaveAutoRoom,
+        isConnected,
+        getRoomPlayers,
+        getRoomInfo,
+        fixGameStateSync,
+        forceGameOverState,
+        handleInput,
+        startRoomGame,
+        socket,
+        waitForConnection,
+    } = useMultiplayer();
 
     const [isMobileDevice, setIsMobileDevice] = useState(false);
     const [isPortraitMode, setIsPortraitMode] = useState(false);
@@ -41,6 +52,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
 
     // 디바운싱을 위한 ref
     const getRoomPlayersTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const syncCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // 플레이어 정보 업데이트 (룸 변경 시에만)
     useEffect(() => {
@@ -137,7 +149,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                 case 'ArrowDown':
                 case 'KeyS':
                     event.preventDefault();
-                    handleInput('soft_drop');
+                    handleInput('move_down');
                     break;
                 case 'ArrowUp':
                 case 'KeyW':
@@ -159,28 +171,13 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                     break;
             }
         },
-        [gameStarted, gameOver]
+        [gameStarted, gameOver, handleInput]
     );
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
-
-    const handleInput = useCallback(
-        (action: string) => {
-            console.log('키보드 입력 처리:', {
-                action,
-                gameStarted,
-                gameOver,
-                playerId: currentPlayer?.id,
-            });
-            if (gameStarted && !gameOver && currentPlayer?.id) {
-                sendPlayerInput(currentPlayer.id, action);
-            }
-        },
-        [gameStarted, gameOver, currentPlayer?.id, sendPlayerInput]
-    );
 
     const handleLeaveRoom = useCallback(() => {
         if (roomId && currentPlayer?.id) {
@@ -190,9 +187,88 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         onBackToMenu();
     }, [roomId, currentPlayer?.id, leaveAutoRoom, dispatch, onBackToMenu]);
 
+    // 게임 재시작 핸들러
     const handleGameRestart = useCallback(() => {
         dispatch(startMultiplayerGame({ roomId }));
     }, [dispatch, roomId]);
+
+    // 게임 시작 핸들러 (새로운 플로우용)
+    const handleStartGame = useCallback(async () => {
+        try {
+            // useMultiplayer 훅에서 연결 대기
+            if (!isConnected) {
+                console.log('Socket.IO 연결 대기 중...');
+                await waitForConnection(10000); // 10초 대기
+            }
+
+            console.log('게임 시작 요청 시작...');
+            await startRoomGame(roomId);
+            console.log('게임 시작 요청이 성공했습니다.');
+        } catch (error) {
+            console.error('게임 시작 요청 실패:', error);
+            alert('게임 시작에 실패했습니다.');
+        }
+    }, [startRoomGame, roomId, isConnected, waitForConnection]);
+
+    // 게임이 시작되지 않았을 때 자동으로 게임 시작
+    useEffect(() => {
+        if (!gameStarted && players.length > 0 && currentPlayer?.id) {
+            console.log('게임이 시작되지 않았으므로 자동으로 게임을 시작합니다.');
+            handleStartGame();
+        }
+    }, [gameStarted, players.length, currentPlayer?.id, handleStartGame]);
+
+    // 게임 상태 동기화 체크 및 수정
+    useEffect(() => {
+        if (!gameStarted || !currentPlayer?.id) return;
+
+        // 주기적으로 게임 상태 동기화 체크
+        syncCheckTimeoutRef.current = setTimeout(() => {
+            // 게임 오버 상태에서 조각이 있는 경우 체크
+            if (gameOver && gameState?.currentPiece) {
+                console.warn('게임 오버 상태에서 조각이 존재함:', {
+                    currentPiece: gameState.currentPiece.type,
+                    ghostPiece: gameState.ghostPiece?.type,
+                });
+                fixGameStateSync(currentPlayer.id);
+                return;
+            }
+
+            // 현재 조각과 고스트 조각 타입 불일치 체크
+            if (gameState?.currentPiece && gameState?.ghostPiece && !gameOver) {
+                const currentType = gameState.currentPiece.type;
+                const ghostType = gameState.ghostPiece.type;
+
+                if (currentType !== ghostType) {
+                    console.warn('게임 상태 동기화 문제 감지:', {
+                        currentPiece: currentType,
+                        ghostPiece: ghostType,
+                    });
+
+                    // 서버에 동기화 수정 요청
+                    fixGameStateSync(currentPlayer.id);
+                }
+            }
+
+            // 게임 오버 상태에서 조각이 스폰 위치에 있는 경우 체크
+            if (gameOver && gameState?.currentPiece) {
+                const spawnY = gameState.currentPiece.position.y;
+                if (spawnY <= 1) {
+                    // 스폰 위치 근처에 있으면
+                    console.warn('게임 오버 상태에서 조각이 스폰 위치에 있음:', {
+                        position: gameState.currentPiece.position,
+                    });
+                    fixGameStateSync(currentPlayer.id);
+                }
+            }
+        }, 5000); // 5초마다 체크
+
+        return () => {
+            if (syncCheckTimeoutRef.current) {
+                clearTimeout(syncCheckTimeoutRef.current);
+            }
+        };
+    }, [gameStarted, gameOver, currentPlayer?.id, gameState, fixGameStateSync]);
 
     // 플레이어 목록 렌더링 최적화
     const playerList = useMemo(() => {
@@ -294,12 +370,40 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                             룸 나가기
                         </button>
 
-                        {gameOver && (
+                        {gameStarted && !gameOver && currentPlayer?.id && (
+                            <button
+                                onClick={() => fixGameStateSync(currentPlayer.id)}
+                                className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                title="게임 상태 동기화 수정"
+                            >
+                                동기화 수정
+                            </button>
+                        )}
+
+                        {gameStarted && currentPlayer?.id && (
+                            <button
+                                onClick={() => forceGameOverState(currentPlayer.id)}
+                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                title="게임 오버 상태 강제 수정"
+                            >
+                                게임 오버 강제
+                            </button>
+                        )}
+
+                        {gameStarted && !gameOver && (
                             <button
                                 onClick={handleGameRestart}
-                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
                             >
                                 다시 시작
+                            </button>
+                        )}
+                        {!gameStarted && (
+                            <button
+                                onClick={handleStartGame}
+                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                            >
+                                게임 시작
                             </button>
                         )}
                     </div>
@@ -377,7 +481,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                 isVisible={isMobileDevice && gameStarted && !gameOver}
                 onMoveLeft={() => handleInput('move_left')}
                 onMoveRight={() => handleInput('move_right')}
-                onMoveDown={() => handleInput('soft_drop')}
+                onMoveDown={() => handleInput('move_down')}
                 onRotate={() => handleInput('rotate')}
                 onHardDrop={() => handleInput('hard_drop')}
                 onHold={() => handleInput('hold')}

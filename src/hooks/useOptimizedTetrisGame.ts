@@ -1,17 +1,6 @@
 import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from './redux';
-import {
-    spawnNewPiece,
-    movePiece,
-    rotatePiece,
-    hardDrop,
-    dropPiece,
-    togglePause,
-    resetGame,
-    checkGameOver,
-    holdPiece,
-} from '../store/tetrisSlice';
-import { calculateDistanceToBottom, calculateDropInterval } from '../utils/tetrisCore';
+import { useMultiplayer } from './useMultiplayer';
 
 // 메모이제이션된 게임 상태 선택자
 const selectGameState = (state: any) => ({
@@ -29,40 +18,48 @@ const KEY_REPEAT_INTERVAL = 50; // 반복 간격
 export const useOptimizedTetrisGame = () => {
     const dispatch = useAppDispatch();
     const gameState = useAppSelector(selectGameState);
+    const { handleInput, currentPlayer } = useMultiplayer();
 
     // ref들을 사용하여 불필요한 리렌더링 방지
-    const dropIntervalRef = useRef<number | null>(null);
-    const lastDropTimeRef = useRef<number>(0);
     const keyRepeatRef = useRef<{ [key: string]: number }>({});
     const keyRepeatTimersRef = useRef<{ [key: string]: NodeJS.Timeout | null }>({});
 
-    // 메모이제이션된 핸들러들
-    const handleMovePiece = useCallback(
-        (offsetX: number, offsetY: number) => {
-            dispatch(movePiece({ offsetX, offsetY }));
-        },
-        [dispatch]
-    );
+    // 서버에 입력 전송하는 함수들
+    const sendMoveLeft = useCallback(() => {
+        if (currentPlayer?.id) {
+            handleInput('move_left');
+        }
+    }, [handleInput, currentPlayer?.id]);
 
-    const handleRotatePiece = useCallback(() => {
-        dispatch(rotatePiece());
-    }, [dispatch]);
+    const sendMoveRight = useCallback(() => {
+        if (currentPlayer?.id) {
+            handleInput('move_right');
+        }
+    }, [handleInput, currentPlayer?.id]);
 
-    const handleHardDrop = useCallback(() => {
-        dispatch(hardDrop());
-    }, [dispatch]);
+    const sendMoveDown = useCallback(() => {
+        if (currentPlayer?.id) {
+            handleInput('move_down');
+        }
+    }, [handleInput, currentPlayer?.id]);
 
-    const handleTogglePause = useCallback(() => {
-        dispatch(togglePause());
-    }, [dispatch]);
+    const sendRotate = useCallback(() => {
+        if (currentPlayer?.id) {
+            handleInput('rotate');
+        }
+    }, [handleInput, currentPlayer?.id]);
 
-    const handleHoldPiece = useCallback(() => {
-        dispatch(holdPiece());
-    }, [dispatch]);
+    const sendHardDrop = useCallback(() => {
+        if (currentPlayer?.id) {
+            handleInput('hard_drop');
+        }
+    }, [handleInput, currentPlayer?.id]);
 
-    const handleResetGame = useCallback(() => {
-        dispatch(resetGame());
-    }, [dispatch]);
+    const sendHold = useCallback(() => {
+        if (currentPlayer?.id) {
+            handleInput('hold');
+        }
+    }, [handleInput, currentPlayer?.id]);
 
     // 키 반복 처리 함수 (메모이제이션)
     const handleKeyRepeat = useCallback(
@@ -73,37 +70,33 @@ export const useOptimizedTetrisGame = () => {
                 case 'ArrowLeft':
                 case 'a':
                 case 'A':
-                    handleMovePiece(-1, 0);
+                    sendMoveLeft();
                     break;
                 case 'ArrowRight':
                 case 'd':
                 case 'D':
-                    handleMovePiece(1, 0);
+                    sendMoveRight();
                     break;
                 case 'ArrowDown':
                 case 's':
                 case 'S':
-                    handleMovePiece(0, 1);
+                    sendMoveDown();
                     break;
             }
         },
-        [gameState.gameOver, gameState.paused, handleMovePiece]
+        [gameState.gameOver, gameState.paused, sendMoveLeft, sendMoveRight, sendMoveDown]
     );
 
     // 키보드 이벤트 핸들러 (메모이제이션)
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
             if (gameState.gameOver) {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    handleResetGame();
-                }
+                // 게임 오버 시 재시작은 서버에서 처리
                 return;
             }
 
             if (gameState.paused) {
-                if (event.key === 'p' || event.key === 'P') {
-                    handleTogglePause();
-                }
+                // 일시정지는 서버에서 처리
                 return;
             }
 
@@ -114,7 +107,7 @@ export const useOptimizedTetrisGame = () => {
                 case 'ArrowLeft':
                 case 'a':
                 case 'A':
-                    handleMovePiece(-1, 0);
+                    sendMoveLeft();
                     // 키 반복 시작
                     keyRepeatRef.current[event.key] = Date.now();
                     if (keyRepeatTimersRef.current[event.key]) {
@@ -130,7 +123,7 @@ export const useOptimizedTetrisGame = () => {
                 case 'ArrowRight':
                 case 'd':
                 case 'D':
-                    handleMovePiece(1, 0);
+                    sendMoveRight();
                     keyRepeatRef.current[event.key] = Date.now();
                     if (keyRepeatTimersRef.current[event.key]) {
                         clearTimeout(keyRepeatTimersRef.current[event.key]!);
@@ -145,7 +138,7 @@ export const useOptimizedTetrisGame = () => {
                 case 'ArrowDown':
                 case 's':
                 case 'S':
-                    handleMovePiece(0, 1);
+                    sendMoveDown();
                     keyRepeatRef.current[event.key] = Date.now();
                     if (keyRepeatTimersRef.current[event.key]) {
                         clearTimeout(keyRepeatTimersRef.current[event.key]!);
@@ -160,31 +153,27 @@ export const useOptimizedTetrisGame = () => {
                 case 'ArrowUp':
                 case 'w':
                 case 'W':
-                    handleRotatePiece();
+                    sendRotate();
                     break;
                 case ' ':
-                    handleHardDrop();
-                    break;
-                case 'p':
-                case 'P':
-                    handleTogglePause();
+                    sendHardDrop();
                     break;
                 case 'Shift':
                 case 'ShiftLeft':
                 case 'ShiftRight':
-                    handleHoldPiece();
+                    sendHold();
                     break;
             }
         },
         [
             gameState.gameOver,
             gameState.paused,
-            handleMovePiece,
-            handleRotatePiece,
-            handleHardDrop,
-            handleTogglePause,
-            handleHoldPiece,
-            handleResetGame,
+            sendMoveLeft,
+            sendMoveRight,
+            sendMoveDown,
+            sendRotate,
+            sendHardDrop,
+            sendHold,
             handleKeyRepeat,
         ]
     );
@@ -224,74 +213,17 @@ export const useOptimizedTetrisGame = () => {
         };
     }, [handleKeyDown, handleKeyUp]);
 
-    // 게임 루프 (최적화)
-    useEffect(() => {
-        if (gameState.gameOver || gameState.paused) return;
-
-        const gameLoop = (timestamp: number) => {
-            if (!lastDropTimeRef.current) {
-                lastDropTimeRef.current = timestamp;
-            }
-
-            // 현재 피스의 바닥까지의 거리 계산
-            const distanceToBottom = calculateDistanceToBottom(
-                gameState.currentPiece,
-                gameState.board
-            );
-            const dropInterval = calculateDropInterval(gameState.level, distanceToBottom);
-
-            if (timestamp - lastDropTimeRef.current > dropInterval) {
-                dispatch(dropPiece());
-                lastDropTimeRef.current = timestamp;
-            }
-
-            dropIntervalRef.current = requestAnimationFrame(gameLoop);
-        };
-
-        dropIntervalRef.current = requestAnimationFrame(gameLoop);
-
-        return () => {
-            if (dropIntervalRef.current) {
-                cancelAnimationFrame(dropIntervalRef.current);
-            }
-        };
-    }, [
-        dispatch,
-        gameState.gameOver,
-        gameState.paused,
-        gameState.level,
-        gameState.currentPiece,
-        gameState.board,
-    ]);
-
-    // 새로운 피스 생성 (최적화)
-    useEffect(() => {
-        if (!gameState.currentPiece && !gameState.gameOver) {
-            dispatch(spawnNewPiece());
-        }
-    }, [gameState.currentPiece, gameState.gameOver, dispatch]);
-
-    // 게임 오버 체크 (최적화)
-    useEffect(() => {
-        dispatch(checkGameOver());
-    }, [gameState.currentPiece, gameState.board, dispatch]);
-
     // 메모이제이션된 반환값
     const gameActions = useMemo(
         () => ({
-            movePiece: handleMovePiece,
-            rotatePiece: handleRotatePiece,
-            hardDrop: handleHardDrop,
-            togglePause: handleTogglePause,
-            resetGame: handleResetGame,
+            moveLeft: sendMoveLeft,
+            moveRight: sendMoveRight,
+            moveDown: sendMoveDown,
+            rotate: sendRotate,
+            hardDrop: sendHardDrop,
+            hold: sendHold,
         }),
-        [
-            handleMovePiece,
-            handleRotatePiece,
-            handleHardDrop,
-            handleTogglePause,
-            handleResetGame,
-        ]
+        [sendMoveLeft, sendMoveRight, sendMoveDown, sendRotate, sendHardDrop, sendHold]
     );
 
     return {

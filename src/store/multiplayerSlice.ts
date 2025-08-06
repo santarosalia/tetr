@@ -1,10 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { 
-    Player, 
-    GameState, 
-    RoomInfo, 
-    MultiplayerState, 
-    PlayerScoreUpdate 
+import {
+    Player,
+    GameState,
+    RoomInfo,
+    MultiplayerState,
+    PlayerScoreUpdate,
 } from '../types/multiplayer';
 
 const initialState: MultiplayerState = {
@@ -99,49 +99,6 @@ const multiplayerSlice = createSlice({
             state.isLoading = false;
             state.error = null;
         },
-        updateGameState: (state, action: PayloadAction<GameState>) => {
-            state.gameState = action.payload;
-        },
-        updateBoard: (state, action: PayloadAction<number[][]>) => {
-            if (state.gameState) {
-                state.gameState.board = action.payload;
-            }
-        },
-        updateCurrentPiece: (state, action: PayloadAction<any>) => {
-            if (state.gameState) {
-                state.gameState.currentPiece = action.payload;
-            }
-        },
-        updateNextPiece: (state, action: PayloadAction<any>) => {
-            if (state.gameState) {
-                state.gameState.nextPiece = action.payload;
-            }
-        },
-        updateHeldPiece: (state, action: PayloadAction<any>) => {
-            if (state.gameState) {
-                state.gameState.heldPiece = action.payload;
-            }
-        },
-        updateScore: (state, action: PayloadAction<number>) => {
-            if (state.gameState) {
-                state.gameState.score = action.payload;
-            }
-        },
-        updateLevel: (state, action: PayloadAction<number>) => {
-            if (state.gameState) {
-                state.gameState.level = action.payload;
-            }
-        },
-        updateLines: (state, action: PayloadAction<number>) => {
-            if (state.gameState) {
-                state.gameState.lines = action.payload;
-            }
-        },
-        setPaused: (state, action: PayloadAction<boolean>) => {
-            if (state.gameState) {
-                state.gameState.paused = action.payload;
-            }
-        },
         updateRoomInfo: (state, action: PayloadAction<RoomInfo>) => {
             state.roomInfo = action.payload;
         },
@@ -184,15 +141,6 @@ export const {
     joinRoom,
     leaveRoom,
     startMultiplayerGame,
-    updateGameState,
-    updateBoard,
-    updateCurrentPiece,
-    updateNextPiece,
-    updateHeldPiece,
-    updateScore,
-    updateLevel,
-    updateLines,
-    setPaused,
     updateRoomInfo,
     updateRoomPlayerCount,
     updateRoomStatus,

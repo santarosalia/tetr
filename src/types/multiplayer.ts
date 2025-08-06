@@ -22,6 +22,7 @@ export interface PlayerGameState {
     canHold?: boolean;
     board?: number[][];
     paused?: boolean;
+    gameSeed?: number;
 }
 
 export interface GameState {
@@ -35,6 +36,7 @@ export interface GameState {
     lines: number;
     gameOver: boolean;
     paused: boolean;
+    ghostPiece?: any;
 }
 
 export interface RoomInfo {
@@ -63,6 +65,8 @@ export interface MultiplayerState {
 export interface SocketData {
     players?: Player[];
     playerId?: string;
+    roomId?: string;
+    gameSeed?: number;
     score?: number;
     level?: number;
     lines?: number;
@@ -82,6 +86,14 @@ export interface SocketData {
         level?: number;
         linesCleared?: number;
         paused?: boolean;
+        canHold?: boolean;
+        lines?: number;
+        ghostPiece?: any;
+        tetrominoBag?: string[];
+        bagIndex?: number;
+        bagNumber?: number;
+        gameSeed?: number;
+        nextPieces?: string[]; // 서버 권위적: 서버에서 받은 다음 피스 큐 (TetrominoType[])
     };
     board?: number[][];
     currentPiece?: any;
@@ -98,17 +110,34 @@ export interface SocketData {
     };
     roomInfo?: RoomInfo;
     playerCount?: number;
-    roomStatus?: string;
-    averageScore?: number;
-    highestScore?: number;
     roomStats?: {
+        totalRooms?: number;
+        waitingRooms?: number;
+        playingRooms?: number;
+        totalPlayers?: number;
         averageScore?: number;
         highestScore?: number;
     };
+    averageScore?: number;
+    highestScore?: number;
     timestamp?: number;
     finalScore?: number;
     finalLevel?: number;
     finalLines?: number;
+    reason?: string; // 게임오버 이유
+    message?: string; // 에러 메시지용
+    success?: boolean; // 게임 상태 동기화 수정 응답용
+    error?: string; // 게임 상태 동기화 수정 에러용
+    changes?: {
+        // 델타 업데이트용
+        board?: Array<{ x: number; y: number; value: number }>;
+        score?: number;
+        level?: number;
+        linesCleared?: number;
+        currentPiece?: any;
+        gameOver?: boolean;
+        paused?: boolean;
+    };
 }
 
 export interface PlayerScoreUpdate {
@@ -118,21 +147,13 @@ export interface PlayerScoreUpdate {
     lines: number;
 }
 
-export interface GameInput {
-    action: string;
-    currentPiece?: any;
-    board?: number[][];
-    score?: number;
-    level?: number;
-    linesCleared?: number;
-}
-
 export interface JoinRoomResponse {
     success: boolean;
     roomId?: string;
     player?: Player;
+    gameSeed?: number;
     error?: {
         code: string;
         message: string;
     };
-} 
+}
