@@ -34,7 +34,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         isConnected,
         getRoomInfo,
         handleInput,
-        startRoomGame,
         socket,
         waitForConnection,
     } = useMultiplayer();
@@ -154,32 +153,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         dispatch(startMultiplayerGame({ roomId }));
     }, [dispatch, roomId]);
 
-    // 게임 시작 핸들러 (새로운 플로우용)
-    const handleStartGame = useCallback(async () => {
-        try {
-            // useMultiplayer 훅에서 연결 대기
-            if (!isConnected) {
-                console.log('Socket.IO 연결 대기 중...');
-                await waitForConnection(10000); // 10초 대기
-            }
-
-            console.log('게임 시작 요청 시작...');
-            await startRoomGame(roomId);
-            console.log('게임 시작 요청이 성공했습니다.');
-        } catch (error) {
-            console.error('게임 시작 요청 실패:', error);
-            alert('게임 시작에 실패했습니다.');
-        }
-    }, [startRoomGame, roomId, isConnected, waitForConnection]);
-
-    // 게임이 시작되지 않았을 때 자동으로 게임 시작
-    useEffect(() => {
-        if (!gameStarted && players.length > 0 && currentPlayer?.id) {
-            console.log('게임이 시작되지 않았으므로 자동으로 게임을 시작합니다.');
-            handleStartGame();
-        }
-    }, [gameStarted, players.length, currentPlayer?.id, handleStartGame]);
-
     // 플레이어 목록 렌더링 최적화
     const playerList = useMemo(() => {
         if (players.length === 0) {
@@ -286,14 +259,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                                 className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
                             >
                                 다시 시작
-                            </button>
-                        )}
-                        {!gameStarted && (
-                            <button
-                                onClick={handleStartGame}
-                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                            >
-                                게임 시작
                             </button>
                         )}
                     </div>

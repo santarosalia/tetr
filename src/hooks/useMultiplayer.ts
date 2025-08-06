@@ -39,8 +39,7 @@ type SocketEvent =
     | 'roomGameState'
     | 'roomStateUpdate'
     | 'roomStatsUpdate'
-    | 'joinAutoRoomResponse'
-    | 'startRoomGameResponse';
+    | 'joinAutoRoomResponse';
 
 export const useMultiplayer = () => {
     const dispatch = useDispatch();
@@ -503,75 +502,6 @@ export const useMultiplayer = () => {
         [emitMessage]
     );
 
-    // 룸 게임 시작 (새로운 플로우용)
-    const startRoomGame = useCallback(
-        (roomId: string): Promise<{ success: boolean; roomId: string }> => {
-            return new Promise((resolve, reject) => {
-                if (!globalSocket) {
-                    reject(new Error('Socket.IO가 연결되지 않았습니다.'));
-                    return;
-                }
-
-                // 연결 상태 확인
-                if (!globalSocket?.connected) {
-                    reject(
-                        new Error(
-                            'Socket.IO가 연결되지 않았습니다. 연결을 기다린 후 다시 시도해주세요.'
-                        )
-                    );
-                    return;
-                }
-
-                // 서버 응답을 기다리는 리스너
-                const handleStartResponse = (response: any) => {
-                    if (response.success) {
-                        console.log('룸 게임 시작 성공:', response);
-                        resolve(response);
-                    } else {
-                        console.error('룸 게임 시작 실패:', response);
-                        reject(
-                            new Error(
-                                response.error?.message || '룸 게임 시작에 실패했습니다.'
-                            )
-                        );
-                    }
-                };
-
-                // 에러 리스너
-                const handleError = (error: any) => {
-                    console.error('룸 게임 시작 에러:', error);
-                    reject(
-                        new Error(error.message || '룸 게임 시작 중 오류가 발생했습니다.')
-                    );
-                };
-
-                // 응답 리스너 등록
-                if (globalSocket) {
-                    globalSocket.once('startRoomGameResponse', handleStartResponse);
-                    globalSocket.once('error', handleError);
-                }
-
-                // 서버에 요청 전송
-                try {
-                    emitMessage('startRoomGame', { roomId });
-                } catch (error) {
-                    reject(error);
-                    return;
-                }
-
-                // 타임아웃 설정
-                setTimeout(() => {
-                    if (globalSocket) {
-                        globalSocket.off('startRoomGameResponse', handleStartResponse);
-                        globalSocket.off('error', handleError);
-                    }
-                    reject(new Error('룸 게임 시작 요청이 시간 초과되었습니다.'));
-                }, 10000);
-            });
-        },
-        [emitMessage]
-    );
-
     const { gameStarted, gameOver, currentPlayer } = multiplayerState;
 
     const handleInput = useCallback(
@@ -624,7 +554,6 @@ export const useMultiplayer = () => {
         getRoomStats,
         getRoomInfo,
         getPlayerInfo,
-        startRoomGame,
         handleInput,
         waitForConnection,
         cleanupGlobalSocket,
