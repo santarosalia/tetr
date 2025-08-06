@@ -479,22 +479,14 @@ export const useMultiplayer = () => {
 
             // 연결 시작
             connectSocket();
-        } else {
-            // 이미 연결된 경우 이벤트 리스너만 설정
-            setupSocketEventListeners(globalSocket);
         }
 
-        // 컴포넌트 언마운트 시 연결 종료
+        // 컴포넌트 언마운트 시
         return () => {
-            // 전역 Socket은 유지하고 이벤트 리스너만 정리
-            if (globalSocket) {
-                // 이벤트 리스너 정리
-                Object.keys(socketEventHandlers).forEach((event) => {
-                    globalSocket?.off(event as SocketEvent);
-                });
-            }
+            // 이벤트 리스너는 전역 소켓에서 제거하지 않음
+            // 대신 컴포넌트별로 관리하거나 전역적으로 한 번만 관리
         };
-    }, [dispatch, getOrCreateSocket]);
+    }, []); // 의존성 배열을 비움으로써 한 번만 실행
 
     // Socket.IO 연결 대기 함수
     const waitForConnection = useCallback((timeoutMs: number = 10000): Promise<void> => {
