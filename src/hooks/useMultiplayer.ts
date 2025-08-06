@@ -31,10 +31,8 @@ type SocketEvent =
     | 'playerJoined'
     | 'playerLeft'
     | 'gameStarted'
-    | 'gameOver'
     | 'playerScoreUpdate'
     | 'playerGameStateChanged'
-    | 'playerGameOver'
     | 'gameStateUpdate'
     | 'roomPlayersUpdate'
     | 'existingPlayersState'
@@ -152,42 +150,6 @@ export const useMultiplayer = () => {
             }
         },
 
-        gameOver: (data: SocketData) => {
-            console.log('서버에서 게임오버 이벤트 수신:', data);
-
-            // 서버 권위적: 서버에서 게임오버를 결정했으므로 클라이언트에서 계산하지 않음
-            dispatch(setGameOver(true));
-
-            if (
-                data.finalScore !== undefined &&
-                data.finalLevel !== undefined &&
-                data.finalLines !== undefined
-            ) {
-                // 서버에서 받은 최종 점수 정보는 syncGameState를 통해 처리
-                dispatch(
-                    syncGameState({
-                        score: data.finalScore,
-                        level: data.finalLevel,
-                        lines: data.finalLines,
-                    })
-                );
-            }
-
-            if (data.playerId) {
-                dispatch(setPlayerGameOver(data.playerId));
-            }
-
-            // 게임오버 이유 표시
-            if (data.reason) {
-                console.log('게임오버 이유:', data.reason);
-            }
-
-            // 게임오버 시간 기록
-            if (data.timestamp) {
-                console.log('게임오버 시간:', new Date(data.timestamp).toLocaleString());
-            }
-        },
-
         playerScoreUpdate: (data: SocketData) => {
             console.log('점수 업데이트:', data);
             if (
@@ -244,13 +206,6 @@ export const useMultiplayer = () => {
             }
         },
 
-        playerGameOver: (data: SocketData) => {
-            console.log('플레이어 게임 오버:', data);
-            if (data.playerId) {
-                dispatch(setPlayerGameOver(data.playerId));
-            }
-        },
-
         gameStateUpdate: (data: SocketData) => {
             console.log('게임 상태 업데이트:', data);
             if (data.gameState) {
@@ -293,6 +248,16 @@ export const useMultiplayer = () => {
                         });
                     }
                     return; // 현재 업데이트는 무시하고 서버 응답을 기다림
+                }
+
+                // 게임 오버 상태 처리
+                if (data.gameState.gameOver) {
+                    console.log('서버에서 게임오버 상태 수신:', data);
+                    dispatch(setGameOver(true));
+
+                    if (data.playerId) {
+                        dispatch(setPlayerGameOver(data.playerId));
+                    }
                 }
 
                 // 서버 권위적: 서버에서 받은 게임 상태로 동기화
