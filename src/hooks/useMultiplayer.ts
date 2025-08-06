@@ -26,12 +26,9 @@ type SocketEvent =
     | 'connect'
     | 'disconnect'
     | 'connect_error'
-    | 'playerJoined'
-    | 'playerLeft'
     | 'playerScoreUpdate'
     | 'playerGameStateChanged'
     | 'gameStateUpdate'
-    | 'roomPlayersUpdate'
     | 'existingPlayersState'
     | 'roomGameState'
     | 'roomStateUpdate'
@@ -102,22 +99,6 @@ export const useMultiplayer = () => {
             console.error('오류 메시지:', error.message);
             console.error('오류 코드:', error.code);
             dispatch(setConnectionStatus(false));
-        },
-
-        playerJoined: (data: SocketData) => {
-            console.log('플레이어 참여:', data);
-            if (data.roomState && data.roomState.players) {
-                dispatch(updatePlayers(data.roomState.players));
-            } else if (data.players) {
-                dispatch(updatePlayers(data.players));
-            }
-        },
-
-        playerLeft: (data: SocketData) => {
-            console.log('플레이어 퇴장:', data);
-            if (data.players) {
-                dispatch(updatePlayers(data.players));
-            }
         },
 
         playerScoreUpdate: (data: SocketData) => {
@@ -256,30 +237,6 @@ export const useMultiplayer = () => {
                         ghostPiece: data.gameState.ghostPiece,
                     })
                 );
-            }
-        },
-
-        roomPlayersUpdate: (data: SocketData) => {
-            if (data.players && Array.isArray(data.players)) {
-                dispatch(updatePlayers(data.players));
-            } else {
-                console.log('플레이어 데이터가 없거나 배열이 아님:', data.players);
-            }
-        },
-
-        existingPlayersState: (data: SocketData) => {
-            console.log('기존 플레이어 상태 수신:', data);
-            if (data.players) {
-                dispatch(updatePlayers(data.players));
-            }
-        },
-
-        roomGameState: (data: SocketData) => {
-            console.log('룸 게임 상태 수신:', data);
-            if (data.gameState) {
-                dispatch(updatePlayers(data.gameState.players));
-                // 게임 시작 상태는 gameStateUpdate에서 처리하므로 여기서는 제거
-                dispatch(setGameOver(data.gameState.gameOver));
             }
         },
 
