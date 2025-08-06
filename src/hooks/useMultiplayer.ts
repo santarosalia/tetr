@@ -39,8 +39,6 @@ type SocketEvent =
     | 'roomPlayersUpdate'
     | 'existingPlayersState'
     | 'roomGameState'
-    | 'roomInfoUpdate'
-    | 'roomPlayerCountUpdate'
     | 'roomStateUpdate'
     | 'roomStatsUpdate'
     | 'joinAutoRoomResponse'
@@ -340,20 +338,6 @@ export const useMultiplayer = () => {
             }
         },
 
-        roomInfoUpdate: (data: SocketData) => {
-            console.log('룸 정보 업데이트:', data);
-            if (data.roomInfo) {
-                dispatch(updateRoomInfo(data.roomInfo));
-            }
-        },
-
-        roomPlayerCountUpdate: (data: SocketData) => {
-            console.log('룸 플레이어 수 업데이트:', data);
-            if (data.playerCount !== undefined) {
-                dispatch(updateRoomPlayerCount(data.playerCount));
-            }
-        },
-
         roomStateUpdate: (data: SocketData) => {
             console.log('룸 상태 업데이트:', data);
             if (data.players) {
@@ -362,6 +346,12 @@ export const useMultiplayer = () => {
             if (data.gameState) {
                 dispatch(setGameStarted(data.gameState.gameStarted));
                 dispatch(setGameOver(data.gameState.gameOver));
+            }
+            if (data.playerCount !== undefined) {
+                dispatch(updateRoomPlayerCount(data.playerCount));
+            }
+            if (data.roomInfo) {
+                dispatch(updateRoomInfo(data.roomInfo));
             }
         },
 
@@ -606,14 +596,6 @@ export const useMultiplayer = () => {
         emitMessage('getRoomStats', {});
     }, [emitMessage]);
 
-    // 룸의 모든 플레이어 정보 조회
-    const getRoomPlayers = useCallback(
-        (roomId: string) => {
-            emitMessage('getRoomPlayers', { roomId });
-        },
-        [emitMessage]
-    );
-
     // 룸 정보 조회
     const getRoomInfo = useCallback(
         (roomId: string) => {
@@ -767,7 +749,6 @@ export const useMultiplayer = () => {
         sendPlayerInput,
         getPlayerGameState,
         getRoomStats,
-        getRoomPlayers,
         getRoomInfo,
         getPlayerInfo,
         fixGameStateSync,

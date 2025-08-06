@@ -71,6 +71,8 @@ export interface SocketData {
     level?: number;
     lines?: number;
     linesCleared?: number;
+    roomInfo?: RoomInfo;
+    playerCount?: number;
     gameState?: {
         players: Player[];
         gameStarted: boolean;
@@ -108,8 +110,6 @@ export interface SocketData {
         gameState: any;
         timestamp: number;
     };
-    roomInfo?: RoomInfo;
-    playerCount?: number;
     roomStats?: {
         totalRooms?: number;
         waitingRooms?: number;

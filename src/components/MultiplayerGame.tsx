@@ -32,7 +32,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         sendPlayerInput,
         leaveAutoRoom,
         isConnected,
-        getRoomPlayers,
         getRoomInfo,
         fixGameStateSync,
         forceGameOverState,
@@ -51,42 +50,32 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
     });
 
     // 디바운싱을 위한 ref
-    const getRoomPlayersTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const syncCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // 플레이어 정보 업데이트 (룸 변경 시에만)
+    // 룸 정보 업데이트 (룸 변경 시에만)
     useEffect(() => {
         if (!roomId || !isConnected) return;
 
-        // 이전 타임아웃 클리어
-        if (getRoomPlayersTimeoutRef.current) {
-            clearTimeout(getRoomPlayersTimeoutRef.current);
-        }
-
         // 디바운싱으로 연속 호출 방지
-        getRoomPlayersTimeoutRef.current = setTimeout(() => {
-            getRoomPlayers(roomId);
+        const timeoutId = setTimeout(() => {
             getRoomInfo(roomId);
         }, 100);
 
         return () => {
-            if (getRoomPlayersTimeoutRef.current) {
-                clearTimeout(getRoomPlayersTimeoutRef.current);
-            }
+            clearTimeout(timeoutId);
         };
-    }, [roomId, isConnected, getRoomPlayers, getRoomInfo]);
+    }, [roomId, isConnected, getRoomInfo]);
 
-    // 주기적으로 룸 정보와 플레이어 정보 업데이트
+    // 주기적으로 룸 정보 업데이트
     useEffect(() => {
         if (!roomId || !isConnected) return;
 
         const interval = setInterval(() => {
             getRoomInfo(roomId);
-            getRoomPlayers(roomId);
-        }, 3000); // 3초마다 룸 정보와 플레이어 정보 업데이트
+        }, 3000); // 3초마다 룸 정보 업데이트
 
         return () => clearInterval(interval);
-    }, [roomId, isConnected, getRoomInfo, getRoomPlayers]);
+    }, [roomId, isConnected, getRoomInfo]);
 
     // 반응형 레이아웃 처리
     useEffect(() => {
