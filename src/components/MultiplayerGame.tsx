@@ -3,7 +3,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TetrisRenderer } from './TetrisRenderer';
 import { GameUI, HeldPiece, NextPiece } from './GameUI';
-import { TouchControls } from './TouchControls';
 import { GameOverScreen } from './GameOverScreen';
 import { RootState } from '../store';
 import { leaveRoom } from '../store/multiplayerSlice';
@@ -158,7 +157,7 @@ export const MultiplayerGame: React.FC = () => {
                         </div>
                     </div>
                     <div>
-                        {player.gameOver ? (
+                        {player.gameState?.gameOver ? (
                             <span className="px-1 py-0.5 bg-red-100 text-red-800 rounded text-xs">
                                 게임 오버
                             </span>
@@ -299,26 +298,13 @@ export const MultiplayerGame: React.FC = () => {
                 </div>
             )}
 
-            {/* 터치 컨트롤 (모바일에서만 표시) */}
-            <TouchControls
-                isVisible={
-                    isMobileDevice && gameState?.gameStarted && !gameState?.gameOver
-                }
-                onMoveLeft={() => handleInput('move_left')}
-                onMoveRight={() => handleInput('move_right')}
-                onMoveDown={() => handleInput('move_down')}
-                onRotate={() => handleInput('rotate')}
-                onHardDrop={() => handleInput('hard_drop')}
-                onHold={() => handleInput('hold')}
-            />
-
             {/* 게임 오버 화면 */}
             {gameState?.gameOver && (
                 <div className="fixed inset-0 z-50">
                     <GameOverScreen
                         finalScore={gameState?.score || 0}
                         finalLevel={gameState?.level || 1}
-                        finalLines={gameState?.lines || 0}
+                        finalLines={gameState?.linesCleared || 0}
                         onRestart={() => {}}
                         onBackToMenu={() => navigate('/')}
                     />
