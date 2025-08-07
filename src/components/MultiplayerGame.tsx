@@ -5,7 +5,7 @@ import { GameUI, HeldPiece, NextPiece } from './GameUI';
 import { TouchControls } from './TouchControls';
 import { GameOverScreen } from './GameOverScreen';
 import { RootState } from '../store';
-import { leaveRoom, startMultiplayerGame } from '../store/multiplayerSlice';
+import { leaveRoom } from '../store/multiplayerSlice';
 import { useMultiplayer } from '../hooks/useMultiplayer';
 import { isMobile, isPortrait, getScreenSize } from '../utils/mobileDetection';
 import { Player } from '../types/multiplayer';
@@ -72,13 +72,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // 게임 시작 처리
-    useEffect(() => {
-        if (!gameStarted) {
-            dispatch(startMultiplayerGame({ roomId }));
-        }
-    }, [dispatch, roomId, gameStarted]);
-
     // 키보드 이벤트 처리
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
@@ -136,11 +129,6 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
         dispatch(leaveRoom());
         onBackToMenu();
     }, [roomId, currentPlayer?.id, leaveAutoRoom, dispatch, onBackToMenu]);
-
-    // 게임 재시작 핸들러
-    const handleGameRestart = useCallback(() => {
-        dispatch(startMultiplayerGame({ roomId }));
-    }, [dispatch, roomId]);
 
     // 플레이어 목록 렌더링 최적화
     const playerList = useMemo(() => {
@@ -244,7 +232,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
 
                         {gameStarted && !gameOver && (
                             <button
-                                onClick={handleGameRestart}
+                                onClick={() => {}}
                                 className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
                             >
                                 다시 시작
@@ -338,7 +326,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                         finalScore={gameState?.score || 0}
                         finalLevel={gameState?.level || 1}
                         finalLines={gameState?.lines || 0}
-                        onRestart={handleGameRestart}
+                        onRestart={() => {}}
                     />
                 </div>
             )}

@@ -92,12 +92,7 @@ const multiplayerSlice = createSlice({
         leaveRoom: (_state) => {
             return initialState;
         },
-        startMultiplayerGame: (state, action: PayloadAction<{ roomId: string }>) => {
-            state.roomId = action.payload.roomId;
-            state.gameStarted = true;
-            state.isLoading = false;
-            state.error = null;
-        },
+
         updateRoomInfo: (state, action: PayloadAction<RoomInfo>) => {
             state.roomInfo = action.payload;
         },
@@ -139,7 +134,6 @@ export const {
     resetMultiplayer,
     joinRoom,
     leaveRoom,
-    startMultiplayerGame,
     updateRoomInfo,
     updateRoomPlayerCount,
     updateRoomStatus,
