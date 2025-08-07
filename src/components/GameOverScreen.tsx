@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { startGame } from '../store/tetrisSlice';
 
 interface GameOverScreenProps {
@@ -7,6 +8,7 @@ interface GameOverScreenProps {
     finalLevel: number;
     finalLines: number;
     onRestart: () => void;
+    onBackToMenu: () => void;
 }
 
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({
@@ -14,12 +16,18 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
     finalLevel,
     finalLines,
     onRestart,
+    onBackToMenu,
 }) => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const handleRestart = () => {
         dispatch(startGame());
         onRestart();
+    };
+
+    const handleBackToMenu = () => {
+        navigate('/');
     };
 
     return (
@@ -84,7 +92,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                         다시 시작
                     </button>
                     <button
-                        onClick={() => {}}
+                        onClick={handleBackToMenu}
                         className="w-full px-6 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 transition-all duration-200"
                     >
                         메인 화면으로

@@ -1,22 +1,17 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { useMultiplayer } from '../hooks/useMultiplayer';
 import { updateCurrentPlayer } from '../store/multiplayerSlice';
 
-interface StartScreenProps {
-    onStart: () => void;
-    onMultiplayer: (roomId: string) => void;
-}
-
-export const StartScreen: React.FC<StartScreenProps> = ({ onMultiplayer }) => {
+export const StartScreen: React.FC = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { joinAutoRoom, isConnected } = useMultiplayer();
     const [playerName, setPlayerName] = useState(
         `Player${Math.floor(Math.random() * 1000)}`
     );
     const [isJoining, setIsJoining] = useState(false);
-
-
 
     const handleMultiplayer = async () => {
         if (!playerName.trim()) {
@@ -26,12 +21,12 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onMultiplayer }) => {
 
         setIsJoining(true);
         try {
-            const { roomId, player } = await joinAutoRoom(playerName);
+            const { player } = await joinAutoRoom(playerName);
             dispatch(updateCurrentPlayer(player));
-            onMultiplayer(roomId);
+            navigate(`/game`);
         } catch (error) {
-            console.error('멀티플레이 게임 시작 실패:', error);
-            alert('멀티플레이 게임 시작에 실패했습니다.');
+            console.error(' 게임 시작 실패:', error);
+            alert(' 게임 시작에 실패했습니다.');
         } finally {
             setIsJoining(false);
         }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
 import { TetrisRenderer } from './TetrisRenderer';
 import { GameUI, HeldPiece, NextPiece } from './GameUI';
 import { TouchControls } from './TouchControls';
@@ -10,21 +11,16 @@ import { useMultiplayer } from '../hooks/useMultiplayer';
 import { isMobile, isPortrait, getScreenSize } from '../utils/mobileDetection';
 import { Player } from '../types/multiplayer';
 
-interface MultiplayerGameProps {
-    roomId: string;
-    onBackToMenu: () => void;
-}
-
 const GAME_WIDTH = 300;
 const GAME_HEIGHT = 600;
 const UI_PANEL_WIDTH = 200;
 const HELD_PIECE_WIDTH = 200;
 
-export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
-    roomId,
-    onBackToMenu,
-}) => {
+export const MultiplayerGame: React.FC = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { roomId } = useParams<{ roomId: string }>();
+
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
     const { players, currentPlayer, gameStarted, gameOver, gameState, roomInfo } =
         multiplayerState;
@@ -75,8 +71,8 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
     // 키보드 이벤트 처리
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
+            console.log(123);
             if (!gameStarted || gameOver) return;
-
             // 멀티플레이어에서는 서버로 입력을 전송
             switch (event.code) {
                 case 'ArrowLeft':
@@ -127,8 +123,8 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
             leaveAutoRoom(roomId, currentPlayer.id);
         }
         dispatch(leaveRoom());
-        onBackToMenu();
-    }, [roomId, currentPlayer?.id, leaveAutoRoom, dispatch, onBackToMenu]);
+        navigate('/');
+    }, [roomId, currentPlayer?.id, leaveAutoRoom, dispatch, navigate]);
 
     // 플레이어 목록 렌더링 최적화
     const playerList = useMemo(() => {
@@ -327,6 +323,7 @@ export const MultiplayerGame: React.FC<MultiplayerGameProps> = ({
                         finalLevel={gameState?.level || 1}
                         finalLines={gameState?.lines || 0}
                         onRestart={() => {}}
+                        onBackToMenu={() => navigate('/')}
                     />
                 </div>
             )}
