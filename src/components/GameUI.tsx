@@ -119,10 +119,18 @@ export const NextPiece: React.FC = () => {
     };
 
     const renderNextPiece = () => {
-        if (!gameState.nextPiece) {
+        // 서버에서 받은 nextPieces 배열이 있으면 첫 번째 요소를 사용
+        // 없으면 기존 nextPiece를 사용 (하위 호환성)
+        const nextPieceType =
+            gameState.nextPieces && gameState.nextPieces.length > 0
+                ? gameState.nextPieces[0]
+                : gameState.nextPiece;
+
+        if (!nextPieceType) {
             return null;
         }
-        const shape = TETROMINO_SHAPES[gameState.nextPiece][0];
+
+        const shape = TETROMINO_SHAPES[nextPieceType][0];
         const rows = shape.length;
         const cols = shape[0].length;
 
@@ -144,7 +152,7 @@ export const NextPiece: React.FC = () => {
                                 className={`next-piece-cell ${cell ? 'filled' : ''}`}
                                 style={{
                                     backgroundColor: cell
-                                        ? getTetrominoColor(gameState.nextPiece)
+                                        ? getTetrominoColor(nextPieceType)
                                         : 'transparent',
                                 }}
                             />
