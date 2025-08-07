@@ -38,13 +38,13 @@ class SocketService {
     // 멀티플레이어 소켓 이벤트 핸들러들
     private multiplayerEventHandlers = {
         gameStateUpdate: (data: GameState) => {
-            console.log('게임 상태 업데이트:', data);
+            // console.log('게임 상태 업데이트:', data);
             if (data) {
                 store.dispatch(setGameState(data));
             }
         },
         roomStateUpdate: (data: RoomState) => {
-            console.log('룸 상태 업데이트:', data);
+            // console.log('룸 상태 업데이트:', data);
             if (data) {
                 store.dispatch(updateRoomState(data));
             }

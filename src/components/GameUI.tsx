@@ -4,15 +4,6 @@ import { TETROMINO_SHAPES } from '../constants/tetrominos';
 import { startGame } from '../store/tetrisSlice';
 import { isMobile } from '../utils/mobileDetection';
 
-// 레벨에 따른 드롭 간격 계산 함수 (useTetrisGame과 동일)
-const calculateDropInterval = (level: number): number => {
-    if (level <= 0) return 1000;
-    if (level >= 29) return 50;
-
-    const baseInterval = Math.pow(0.8 - (level - 1) * 0.007, level - 1) * 1000;
-    return Math.max(50, Math.min(1000, baseInterval));
-};
-
 // 보유 블록 컴포넌트
 export const HeldPiece: React.FC = () => {
     const gameState = useAppSelector((state) => state.tetris);
@@ -103,7 +94,7 @@ export const HeldPiece: React.FC = () => {
 
 // 다음 블록 컴포넌트
 export const NextPiece: React.FC = () => {
-    const gameState = useAppSelector((state) => state.tetris);
+    const gameState = useAppSelector((state) => state.multiplayer.gameState);
 
     const getTetrominoColor = (type: string) => {
         const colorMap: Record<string, string> = {
@@ -122,9 +113,9 @@ export const NextPiece: React.FC = () => {
         // 서버에서 받은 nextPieces 배열이 있으면 첫 번째 요소를 사용
         // 없으면 기존 nextPiece를 사용 (하위 호환성)
         const nextPieceType =
-            gameState.nextPieces && gameState.nextPieces.length > 0
+            gameState?.nextPieces && gameState.nextPieces.length > 0
                 ? gameState.nextPieces[0]
-                : gameState.nextPiece;
+                : gameState?.nextPiece;
 
         if (!nextPieceType) {
             return null;
@@ -182,8 +173,6 @@ export const GameUI: React.FC = () => {
     };
 
     // 현재 레벨의 드롭 간격 계산
-    const currentDropInterval = calculateDropInterval(gameState.level);
-    const speedPercentage = Math.round((1000 - currentDropInterval) / 10);
 
     return (
         <div className="ui-panel h-full">
@@ -197,15 +186,6 @@ export const GameUI: React.FC = () => {
             <div className="mb-5">
                 <h3 className="text-white text-lg font-semibold mb-2.5">레벨</h3>
                 <div className="text-xl font-bold text-yellow-400">{gameState.level}</div>
-                <div className="text-sm text-gray-300 mt-1">속도: {speedPercentage}%</div>
-                <div className="mt-2">
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div
-                            className="bg-gradient-to-r from-green-400 to-red-400 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${speedPercentage}%` }}
-                        ></div>
-                    </div>
-                </div>
             </div>
 
             <div className="mb-5">
