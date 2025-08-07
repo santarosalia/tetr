@@ -39,13 +39,6 @@ export const useMultiplayer = () => {
     // Socket 인스턴스 생성 및 관리
 
     // Socket 정리 함수
-    const cleanupSocket = useCallback(() => {
-        if (socketRef.current) {
-            socketRef.current.disconnect();
-            socketRef.current = null;
-        }
-        isConnectingRef.current = false;
-    }, []);
 
     // 소켓 이벤트 핸들러들을 객체로 분리
     const socketEventHandlers = {
@@ -270,6 +263,14 @@ export const useMultiplayer = () => {
             setupSocketEventListeners(socket);
         };
 
+        const cleanupSocket = () => {
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+            }
+            isConnectingRef.current = false;
+        };
+
         // 연결 시작
         connectSocket();
 
@@ -408,6 +409,5 @@ export const useMultiplayer = () => {
         leaveAutoRoom,
         sendPlayerInput,
         handleInput,
-        cleanupSocket,
     };
 };
