@@ -2,17 +2,15 @@ import { io, Socket } from 'socket.io-client';
 import { store } from '../store';
 import {
     setConnectionStatus,
-    updatePlayers,
     setGameState,
     updateRoomState,
 } from '../store/multiplayerSlice';
-import { SocketData, JoinRoomResponse, RoomState, GameState } from '../types/multiplayer';
+import { JoinRoomResponse, RoomState, GameState } from '../types/multiplayer';
 
 class SocketService {
     private socket: Socket | null = null;
     private isConnecting = false;
     private maxReconnectAttempts = 5;
-
     // 기본 소켓 이벤트 핸들러들
     private socketEventHandlers = {
         connect: () => {

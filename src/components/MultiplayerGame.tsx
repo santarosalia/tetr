@@ -9,6 +9,7 @@ import { leaveRoom } from '../store/multiplayerSlice';
 import { useMultiplayer } from '../hooks/useMultiplayer';
 import { isMobile, isPortrait, getScreenSize } from '../utils/mobileDetection';
 import { Player } from '../types/multiplayer';
+import { socketService } from '../services/socketService';
 
 const GAME_WIDTH = 300;
 const GAME_HEIGHT = 600;
@@ -66,6 +67,11 @@ export const MultiplayerGame: React.FC = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    useEffect(() => {
+        if (!isConnected) {
+            navigate('/');
+        }
+    }, [isConnected, navigate]);
     // 키보드 이벤트 처리
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
