@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import * as PIXI from 'pixi.js';
-import { useAppSelector, useAppDispatch } from '../hooks/redux';
+import { useAppSelector } from '../hooks/redux';
 import { TETROMINO_COLORS } from '../constants/tetrominos';
 import { BOARD_WIDTH, BOARD_HEIGHT, BLOCK_SIZE } from '../utils/tetrisLogic';
 import { PhysicsEffects, PhysicsEffectsRef } from './PhysicsEffects';
-import { clearLastPlacedPiece } from '../store/tetrisSlice';
+import { TetrominoType } from '../types/shared';
 
 interface TetrisRendererProps {
     width: number;
@@ -15,8 +15,7 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
     const canvasRef = useRef<HTMLDivElement>(null);
     const appRef = useRef<PIXI.Application | null>(null);
     const physicsEffectsRef = useRef<PhysicsEffectsRef>(null);
-    const gameState = useAppSelector((state) => state.tetris);
-    const dispatch = useAppDispatch();
+    const gameState = useAppSelector((state) => state.multiplayer.gameState);
     const animationRef = useRef<number | null>(null);
     const timeRef = useRef<number>(0);
 
@@ -45,24 +44,25 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
     }, [width, height]);
 
     // 피스 배치 감지 및 파티클 효과 트리거
-    useEffect(() => {
-        if (gameState.lastPlacedPiece && physicsEffectsRef.current) {
-            // number[][]를 boolean[][]로 변환
-            const booleanShape = gameState.lastPlacedPiece.shape.map((row) =>
-                row.map((cell) => cell !== 0)
-            );
+    // useEffect(() => {
+    //     if (gameState?.currentPiece && physicsEffectsRef.current) {
+    //         // number[][]를 boolean[][]로 변환
+    //         console.log(gameState.currentPiece);
+    //         const booleanShape = gameState.currentPiece.shape.map((row) =>
+    //             row.map((cell) => cell !== 0)
+    //         );
 
-            physicsEffectsRef.current.createPieceDropEffect(
-                gameState.lastPlacedPiece.position.x,
-                gameState.lastPlacedPiece.position.y,
-                gameState.lastPlacedPiece.type,
-                booleanShape
-            );
+    //         physicsEffectsRef.current.createPieceDropEffect(
+    //             gameState.currentPiece.position.x,
+    //             gameState.currentPiece.position.y,
+    //             gameState.currentPiece.type,
+    //             booleanShape
+    //         );
 
-            // 파티클 효과 트리거 후 lastPlacedPiece 초기화
-            dispatch(clearLastPlacedPiece());
-        }
-    }, [gameState.lastPlacedPiece, dispatch]);
+    //         // 파티클 효과 트리거 후 lastPlacedPiece 초기화
+    //         dispatch(clearLastPlacedPiece());
+    //     }
+    // }, [gameState?.currentPiece, dispatch]);
 
     // 배경 애니메이션 함수
     const animateBackground = (time: number) => {
@@ -256,7 +256,7 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
         const blocksGraphics = new PIXI.Graphics();
         for (let y = 0; y < BOARD_HEIGHT; y++) {
             for (let x = 0; x < BOARD_WIDTH; x++) {
-                if (gameState.board[y][x]) {
+                if (gameState?.board?.[y]?.[x]) {
                     const blockX = boardX + x * BLOCK_SIZE;
                     const blockY = boardY + y * BLOCK_SIZE;
 
@@ -272,11 +272,10 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
         app.stage.addChild(blocksGraphics);
 
         // Draw current piece
-        if (gameState.currentPiece) {
-            console.log('렌더링할 currentPiece:', gameState.currentPiece);
+        if (gameState?.currentPiece) {
             const pieceGraphics = new PIXI.Graphics();
             const { shape, position } = gameState.currentPiece;
-            const color = TETROMINO_COLORS[gameState.currentPiece.type];
+            const color = TETROMINO_COLORS[gameState.currentPiece.type as TetrominoType];
 
             for (let y = 0; y < shape.length; y++) {
                 for (let x = 0; x < shape[y].length; x++) {
@@ -295,13 +294,13 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
             }
             app.stage.addChild(pieceGraphics);
         } else {
-            console.log('currentPiece가 없습니다:', gameState.currentPiece);
+            console.log('currentPiece가 없습니다:', gameState?.currentPiece);
         }
 
         // Draw ghost piece
-        if (gameState.ghostPiece && gameState.currentPiece) {
+        if (gameState?.ghostPiece && gameState?.currentPiece) {
             const ghostGraphics = new PIXI.Graphics();
-            const { shape, position } = gameState.ghostPiece;
+            const { shape, position } = gameState?.ghostPiece;
 
             for (let y = 0; y < shape.length; y++) {
                 for (let x = 0; x < shape[y].length; x++) {
@@ -324,7 +323,7 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
         }
 
         // Draw game over overlay
-        if (gameState.gameOver) {
+        if (gameState?.gameOver) {
             const overlay = new PIXI.Graphics();
             overlay.beginFill(0x000000, 0.8);
             overlay.drawRect(0, 0, width, height);
@@ -344,7 +343,7 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
         }
 
         // Draw pause overlay
-        if (gameState.paused && !gameState.gameOver) {
+        if (gameState?.paused && !gameState?.gameOver) {
             const overlay = new PIXI.Graphics();
             overlay.beginFill(0x000000, 0.5);
             overlay.drawRect(0, 0, width, height);

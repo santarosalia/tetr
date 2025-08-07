@@ -22,8 +22,7 @@ export const MultiplayerGame: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
 
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
-    const { players, currentPlayer, gameStarted, gameOver, gameState, roomInfo } =
-        multiplayerState;
+    const { currentPlayer, gameState, roomState } = multiplayerState;
     const { leaveAutoRoom, isConnected, handleInput } = useMultiplayer();
 
     const [isMobileDevice, setIsMobileDevice] = useState(false);
@@ -71,24 +70,23 @@ export const MultiplayerGame: React.FC = () => {
     // 키보드 이벤트 처리
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
-            console.log(123);
-            if (!gameStarted || gameOver) return;
+            if (!gameState?.gameStarted || gameState?.gameOver) return;
             // 멀티플레이어에서는 서버로 입력을 전송
             switch (event.code) {
                 case 'ArrowLeft':
                 case 'KeyA':
                     event.preventDefault();
-                    handleInput('move_left');
+                    handleInput('moveLeft');
                     break;
                 case 'ArrowRight':
                 case 'KeyD':
                     event.preventDefault();
-                    handleInput('move_right');
+                    handleInput('moveRight');
                     break;
                 case 'ArrowDown':
                 case 'KeyS':
                     event.preventDefault();
-                    handleInput('move_down');
+                    handleInput('moveDown');
                     break;
                 case 'ArrowUp':
                 case 'KeyW':
@@ -97,7 +95,7 @@ export const MultiplayerGame: React.FC = () => {
                     break;
                 case 'Space':
                     event.preventDefault();
-                    handleInput('hard_drop');
+                    handleInput('hardDrop');
                     break;
                 case 'ShiftLeft':
                 case 'ShiftRight':
@@ -110,7 +108,7 @@ export const MultiplayerGame: React.FC = () => {
                     break;
             }
         },
-        [gameStarted, gameOver, handleInput]
+        [gameState?.gameStarted, gameState?.gameOver, handleInput]
     );
 
     useEffect(() => {
@@ -128,7 +126,7 @@ export const MultiplayerGame: React.FC = () => {
 
     // 플레이어 목록 렌더링 최적화
     const playerList = useMemo(() => {
-        if (players.length === 0) {
+        if (roomState?.players.length === 0) {
             return (
                 <p className="text-gray-500 text-center py-4 text-sm">
                     플레이어가 없습니다.
@@ -136,7 +134,7 @@ export const MultiplayerGame: React.FC = () => {
             );
         }
 
-        return players.map((player: Player) => (
+        return roomState?.players.map((player: Player) => (
             <div
                 key={player.id}
                 className={`p-2 rounded border text-sm ${
@@ -173,7 +171,7 @@ export const MultiplayerGame: React.FC = () => {
                 </div>
             </div>
         ));
-    }, [players, currentPlayer?.id]);
+    }, [roomState?.players, currentPlayer?.id]);
 
     // 연결 상태 표시
     const connectionStatus = useMemo(
@@ -205,14 +203,11 @@ export const MultiplayerGame: React.FC = () => {
                         <h1 className="text-xl font-bold text-gray-800">
                             멀티플레이 테트리스
                         </h1>
-                        <p className="text-sm text-gray-600">룸: {roomId}</p>
-                        {roomInfo && (
+                        <p className="text-sm text-gray-600">룸: {roomState?.roomId}</p>
+                        {roomState && (
                             <div className="flex items-center space-x-4 mt-1">
                                 <span className="text-xs text-gray-600">
-                                    플레이어: {roomInfo.playerCount}/{roomInfo.maxPlayers}
-                                </span>
-                                <span className="text-xs text-gray-600">
-                                    상태: {roomInfo.roomStatus}
+                                    플레이어: {roomState.players.length}/ 99
                                 </span>
                             </div>
                         )}
@@ -226,7 +221,7 @@ export const MultiplayerGame: React.FC = () => {
                             룸 나가기
                         </button>
 
-                        {gameStarted && !gameOver && (
+                        {gameState?.gameStarted && !gameState?.gameOver && (
                             <button
                                 onClick={() => {}}
                                 className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
@@ -252,7 +247,7 @@ export const MultiplayerGame: React.FC = () => {
                         </div>
 
                         {/* 모바일에서 보유 블록과 다음 블록을 캔버스 바깥에 표시 */}
-                        {gameStarted && !gameOver && (
+                        {gameState?.gameStarted && !gameState?.gameOver && (
                             <>
                                 {/* 보유 블록 - 좌상단 */}
                                 <div className="fixed top-20 left-4 z-20">
@@ -306,7 +301,9 @@ export const MultiplayerGame: React.FC = () => {
 
             {/* 터치 컨트롤 (모바일에서만 표시) */}
             <TouchControls
-                isVisible={isMobileDevice && gameStarted && !gameOver}
+                isVisible={
+                    isMobileDevice && gameState?.gameStarted && !gameState?.gameOver
+                }
                 onMoveLeft={() => handleInput('move_left')}
                 onMoveRight={() => handleInput('move_right')}
                 onMoveDown={() => handleInput('move_down')}
@@ -316,7 +313,7 @@ export const MultiplayerGame: React.FC = () => {
             />
 
             {/* 게임 오버 화면 */}
-            {gameOver && (
+            {gameState?.gameOver && (
                 <div className="fixed inset-0 z-50">
                     <GameOverScreen
                         finalScore={gameState?.score || 0}

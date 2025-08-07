@@ -1,9 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import {
     Player,
-    RoomInfo,
+    RoomState,
     MultiplayerState,
     PlayerScoreUpdate,
+    GameState,
 } from '../types/multiplayer';
 
 const initialState: MultiplayerState = {
@@ -16,7 +17,7 @@ const initialState: MultiplayerState = {
     isLoading: false,
     error: null,
     gameState: null,
-    roomInfo: null,
+    roomState: null,
 };
 
 const multiplayerSlice = createSlice({
@@ -45,11 +46,8 @@ const multiplayerSlice = createSlice({
         updateCurrentPlayer: (state, action: PayloadAction<Player>) => {
             state.currentPlayer = action.payload;
         },
-        setGameStarted: (state, action: PayloadAction<boolean>) => {
-            state.gameStarted = action.payload;
-        },
-        setGameOver: (state, action: PayloadAction<boolean>) => {
-            state.gameOver = action.payload;
+        setGameState: (state, action: PayloadAction<GameState>) => {
+            state.gameState = action.payload;
         },
         updatePlayerScore: (state, action: PayloadAction<PlayerScoreUpdate>) => {
             const { playerId, score, level, lines } = action.payload;
@@ -92,32 +90,8 @@ const multiplayerSlice = createSlice({
         leaveRoom: (_state) => {
             return initialState;
         },
-
-        updateRoomInfo: (state, action: PayloadAction<RoomInfo>) => {
-            state.roomInfo = action.payload;
-        },
-        updateRoomPlayerCount: (state, action: PayloadAction<number>) => {
-            if (state.roomInfo) {
-                state.roomInfo.playerCount = action.payload;
-            }
-        },
-        updateRoomStatus: (state, action: PayloadAction<string>) => {
-            if (state.roomInfo) {
-                state.roomInfo.roomStatus = action.payload;
-            }
-        },
-        updateRoomStats: (
-            state,
-            action: PayloadAction<{ averageScore?: number; highestScore?: number }>
-        ) => {
-            if (state.roomInfo) {
-                if (action.payload.averageScore !== undefined) {
-                    state.roomInfo.averageScore = action.payload.averageScore;
-                }
-                if (action.payload.highestScore !== undefined) {
-                    state.roomInfo.highestScore = action.payload.highestScore;
-                }
-            }
+        updateRoomState: (state, action: PayloadAction<RoomState>) => {
+            state.roomState = action.payload;
         },
     },
 });
@@ -126,18 +100,14 @@ export const {
     setConnectionStatus,
     updatePlayers,
     updateCurrentPlayer,
-    setGameStarted,
-    setGameOver,
+    setGameState,
     updatePlayerScore,
     setPlayerGameOver,
     clearError,
     resetMultiplayer,
     joinRoom,
     leaveRoom,
-    updateRoomInfo,
-    updateRoomPlayerCount,
-    updateRoomStatus,
-    updateRoomStats,
+    updateRoomState,
 } = multiplayerSlice.actions;
 
 export default multiplayerSlice.reducer;

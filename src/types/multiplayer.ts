@@ -1,5 +1,7 @@
 // 멀티플레이어 관련 타입 정의
 
+import { TetrominoType } from './shared';
+
 export interface Player {
     id: string;
     name: string;
@@ -26,27 +28,50 @@ export interface PlayerGameState {
 }
 
 export interface GameState {
-    board: number[][];
-    currentPiece: any;
-    nextPiece: any;
-    heldPiece: any;
-    canHold: boolean;
+    playerId: string;
+    roomId: string;
+    gameStarted: boolean;
     score: number;
     level: number;
-    lines: number;
+    linesCleared: number;
+    currentPiece: Piece | null;
+    nextPiece: TetrominoType;
+    heldPiece: TetrominoType | null;
+    canHold: boolean;
+    ghostPiece: Piece | null;
+    board: number[][];
     gameOver: boolean;
     paused: boolean;
-    ghostPiece?: any;
+    isGameStarted: boolean;
+    startTime: Date;
+    lastActivity: Date;
+    tetrominoBag: TetrominoType[];
+    bagIndex: number;
+    bagNumber: number;
+    gameSeed: number;
+    nextPieces?: TetrominoType[];
 }
 
-export interface RoomInfo {
+export interface Piece {
+    type: string;
+    position: Position;
+    rotation: number;
+    shape: number[][];
+    falling: boolean;
+    lockDelay: number;
+    dropTime: number;
+}
+export interface Position {
+    x: number;
+    y: number;
+}
+export interface RoomState {
+    success: boolean;
     roomId: string;
-    playerCount: number;
-    maxPlayers: number;
-    roomStatus: string;
-    averageScore?: number;
-    highestScore?: number;
-    createdAt?: string;
+    players: Player[];
+    gameState: GameState;
+    newPlayer: Player;
+    timestamp: number;
 }
 
 export interface MultiplayerState {
@@ -59,7 +84,7 @@ export interface MultiplayerState {
     isLoading: boolean;
     error: string | null;
     gameState: GameState | null;
-    roomInfo: RoomInfo | null;
+    roomState: RoomState | null;
 }
 
 export interface SocketData {
@@ -71,7 +96,7 @@ export interface SocketData {
     level?: number;
     lines?: number;
     linesCleared?: number;
-    roomInfo?: RoomInfo;
+    roomInfo?: RoomState;
     playerCount?: number;
     gameState?: {
         players: Player[];

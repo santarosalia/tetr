@@ -3,15 +3,10 @@ import { store } from '../store';
 import {
     setConnectionStatus,
     updatePlayers,
-    setGameStarted,
-    setGameOver,
-    updatePlayerScore,
-    setPlayerGameOver,
-    updateRoomInfo,
-    updateRoomPlayerCount,
+    setGameState,
+    updateRoomState,
 } from '../store/multiplayerSlice';
-import { startGameWithSeed } from '../store/tetrisSlice';
-import { SocketData, JoinRoomResponse } from '../types/multiplayer';
+import { SocketData, JoinRoomResponse, RoomState, GameState } from '../types/multiplayer';
 
 class SocketService {
     private socket: Socket | null = null;
@@ -44,84 +39,16 @@ class SocketService {
 
     // 멀티플레이어 소켓 이벤트 핸들러들
     private multiplayerEventHandlers = {
-        playerScoreUpdate: (data: SocketData) => {
-            console.log('점수 업데이트:', data);
-            if (
-                data.playerId &&
-                data.score !== undefined &&
-                data.level !== undefined &&
-                data.lines !== undefined
-            ) {
-                store.dispatch(
-                    updatePlayerScore({
-                        playerId: data.playerId,
-                        score: data.score,
-                        level: data.level,
-                        lines: data.lines,
-                    })
-                );
-            }
-        },
-
-        playerGameStateChanged: (data: SocketData) => {
-            console.log('플레이어 게임 상태 변경:', data);
-            if (
-                data.playerId &&
-                data.score !== undefined &&
-                data.level !== undefined &&
-                data.linesCleared !== undefined
-            ) {
-                store.dispatch(
-                    updatePlayerScore({
-                        playerId: data.playerId,
-                        score: data.score,
-                        level: data.level,
-                        lines: data.linesCleared,
-                    })
-                );
-
-                if (data.gameOver) {
-                    store.dispatch(setPlayerGameOver(data.playerId));
-                }
-            }
-        },
-
-        gameStateUpdate: (data: SocketData) => {
+        gameStateUpdate: (data: GameState) => {
             console.log('게임 상태 업데이트:', data);
-            if (data.gameState) {
-                store.dispatch(setGameStarted(data.gameState.gameStarted));
-                store.dispatch(setGameOver(data.gameState.gameOver));
-                if (data.gameState.players) {
-                    store.dispatch(updatePlayers(data.gameState.players));
-                }
+            if (data) {
+                store.dispatch(setGameState(data));
             }
         },
-
-        existingPlayersState: (data: SocketData) => {
-            console.log('기존 플레이어 상태:', data);
-            if (data.players) {
-                store.dispatch(updatePlayers(data.players));
-            }
-        },
-
-        roomGameState: (data: SocketData) => {
-            console.log('룸 게임 상태:', data);
-            if (data.gameState) {
-                store.dispatch(setGameStarted(data.gameState.gameStarted));
-                store.dispatch(setGameOver(data.gameState.gameOver));
-                if (data.gameState.players) {
-                    store.dispatch(updatePlayers(data.gameState.players));
-                }
-            }
-        },
-
-        roomStateUpdate: (data: SocketData) => {
+        roomStateUpdate: (data: RoomState) => {
             console.log('룸 상태 업데이트:', data);
-            if (data.roomInfo) {
-                store.dispatch(updateRoomInfo(data.roomInfo));
-            }
-            if (data.playerCount !== undefined) {
-                store.dispatch(updateRoomPlayerCount(data.playerCount));
+            if (data) {
+                store.dispatch(updateRoomState(data));
             }
         },
     };
@@ -266,11 +193,6 @@ class SocketService {
                 if (response.success && response.roomId) {
                     console.log('룸 참여 성공:', response);
 
-                    if (response.gameSeed) {
-                        console.log('서버로부터 받은 게임 시드:', response.gameSeed);
-                        store.dispatch(startGameWithSeed({ seed: response.gameSeed }));
-                    }
-
                     resolve({ roomId: response.roomId, player: response.player });
                 } else {
                     reject(
@@ -296,7 +218,7 @@ class SocketService {
 
     // 게임 입력 전송
     sendPlayerInput(playerId: string, action: string) {
-        this.emit('playerInput', { playerId, action });
+        this.emit('handlePlayerInput', { playerId, action });
     }
 
     // 게임 상태 동기화

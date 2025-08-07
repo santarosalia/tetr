@@ -1,12 +1,11 @@
-import { useEffect, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { socketService } from '../services/socketService';
 
 export const useMultiplayer = () => {
-    const dispatch = useDispatch();
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
-    const tetrisState = useSelector((state: RootState) => state.tetris);
+    const { gameState } = multiplayerState;
 
     // 자동 룸 참여
     const joinAutoRoom = useCallback(
@@ -34,12 +33,12 @@ export const useMultiplayer = () => {
     // 게임 입력 처리 (멀티플레이어용)
     const handleInput = useCallback(
         (action: string) => {
-            console.log(multiplayerState);
-            if (multiplayerState.currentPlayer?.id) {
-                sendPlayerInput(multiplayerState.currentPlayer.id, action);
+            if (gameState?.playerId) {
+                console.log(gameState);
+                sendPlayerInput(gameState?.playerId, action);
             }
         },
-        [sendPlayerInput, multiplayerState.currentPlayer?.id]
+        [sendPlayerInput, gameState?.playerId]
     );
 
     return {
