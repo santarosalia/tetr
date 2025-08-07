@@ -16,10 +16,6 @@ import { SocketData, JoinRoomResponse } from '../types/multiplayer';
 import { startGameWithSeed, setGameSeed, syncGameState } from '../store/tetrisSlice';
 import { TetrominoType } from '../types/shared';
 
-// 전역 Socket 인스턴스 관리
-let globalSocket: Socket | null = null;
-let isConnecting = false;
-
 // 소켓 이벤트 타입 정의
 type SocketEvent =
     | 'connect'
@@ -31,7 +27,6 @@ type SocketEvent =
     | 'existingPlayersState'
     | 'roomGameState'
     | 'roomStateUpdate'
-    | 'roomStatsUpdate'
     | 'joinAutoRoomResponse';
 
 export const useMultiplayer = () => {
@@ -39,57 +34,31 @@ export const useMultiplayer = () => {
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
     const tetrisState = useSelector((state: RootState) => state.tetris);
     const socketRef = useRef<Socket | null>(null);
+    const isConnectingRef = useRef(false);
 
-    // 전역 Socket 인스턴스 사용
-    const getOrCreateSocket = useCallback((): Socket => {
-        if (globalSocket && globalSocket.connected) {
-            return globalSocket;
+    // Socket 인스턴스 생성 및 관리
+
+    // Socket 정리 함수
+    const cleanupSocket = useCallback(() => {
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+            socketRef.current = null;
         }
-
-        if (isConnecting) {
-            // 연결 중이면 기존 소켓 반환
-            return globalSocket || io('http://localhost:3000');
-        }
-
-        isConnecting = true;
-
-        // 새로운 Socket 인스턴스 생성
-        const socketUrl = 'http://localhost:3000';
-        globalSocket = io(socketUrl, {
-            transports: ['websocket', 'polling'],
-            autoConnect: true,
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            timeout: 20000,
-        });
-
-        socketRef.current = globalSocket;
-        isConnecting = false;
-
-        return globalSocket;
-    }, []);
-
-    // 전역 Socket 정리 함수
-    const cleanupGlobalSocket = useCallback(() => {
-        if (globalSocket) {
-            globalSocket.disconnect();
-            globalSocket = null;
-        }
-        isConnecting = false;
+        isConnectingRef.current = false;
     }, []);
 
     // 소켓 이벤트 핸들러들을 객체로 분리
     const socketEventHandlers = {
         connect: () => {
             console.log('Socket.IO 연결됨');
-            console.log('소켓 ID:', globalSocket?.id);
+            console.log('소켓 ID:', socketRef.current?.id);
+            isConnectingRef.current = false;
             dispatch(setConnectionStatus(true));
         },
 
         disconnect: () => {
             console.log('Socket.IO 연결 종료');
-            console.log('연결 해제 이유:', globalSocket?.disconnected);
+            console.log('연결 해제 이유:', socketRef.current?.disconnected);
             dispatch(setConnectionStatus(false));
         },
 
@@ -97,6 +66,7 @@ export const useMultiplayer = () => {
             console.error('Socket.IO 연결 오류:', error);
             console.error('오류 메시지:', error.message);
             console.error('오류 코드:', error.code);
+            isConnectingRef.current = false;
             dispatch(setConnectionStatus(false));
         },
 
@@ -274,53 +244,45 @@ export const useMultiplayer = () => {
     };
 
     useEffect(() => {
-        // Socket.IO 연결 설정 (한 번만)
-        if (!globalSocket || !globalSocket.connected) {
-            const connectSocket = () => {
-                const socket = getOrCreateSocket();
-                setupSocketEventListeners(socket);
-            };
-
-            // 연결 시작
-            connectSocket();
+        // 이미 연결 중이거나 연결된 상태라면 연결하지 않음
+        if (
+            isConnectingRef.current ||
+            (socketRef.current && socketRef.current.connected)
+        ) {
+            return;
         }
 
-        // 컴포넌트 언마운트 시
+        // Socket.IO 연결 설정 (미연결 시)
+        const connectSocket = () => {
+            if (isConnectingRef.current) return;
+
+            isConnectingRef.current = true;
+            const socketUrl = 'http://localhost:3000';
+            const socket = io(socketUrl, {
+                transports: ['websocket', 'polling'],
+                autoConnect: true,
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                timeout: 20000,
+            });
+            socketRef.current = socket;
+            setupSocketEventListeners(socket);
+        };
+
+        // 연결 시작
+        connectSocket();
+
+        // 컴포넌트 언마운트 시 정리
         return () => {
-            // 이벤트 리스너는 전역 소켓에서 제거하지 않음
-            // 대신 컴포넌트별로 관리하거나 전역적으로 한 번만 관리
+            cleanupSocket();
         };
     }, []); // 의존성 배열을 비움으로써 한 번만 실행
 
-    // Socket.IO 연결 대기 함수
-    const waitForConnection = useCallback((timeoutMs: number = 10000): Promise<void> => {
-        return new Promise((resolve, reject) => {
-            if (globalSocket && globalSocket.connected) {
-                resolve();
-                return;
-            }
-
-            let attempts = 0;
-            const maxAttempts = timeoutMs / 100;
-            const checkConnection = () => {
-                attempts++;
-                if (globalSocket && globalSocket.connected) {
-                    console.log('Socket.IO 연결 완료');
-                    resolve();
-                } else if (attempts >= maxAttempts) {
-                    reject(new Error('Socket.IO 연결 시간 초과'));
-                } else {
-                    setTimeout(checkConnection, 100);
-                }
-            };
-            checkConnection();
-        });
-    }, []);
-
     // Socket.IO를 통해 메시지 전송
     const emitMessage = useCallback((event: string, data: any) => {
-        if (globalSocket && globalSocket.connected) {
-            globalSocket.emit(event, data);
+        if (socketRef.current && socketRef.current.connected) {
+            socketRef.current.emit(event, data);
         } else {
             console.error('Socket.IO가 연결되지 않았습니다.');
             throw new Error('Socket.IO가 연결되지 않았습니다.');
@@ -331,7 +293,7 @@ export const useMultiplayer = () => {
     const joinAutoRoom = useCallback(
         (playerName: string): Promise<{ roomId: string; player: any }> => {
             return new Promise((resolve, reject) => {
-                if (!globalSocket) {
+                if (!socketRef.current) {
                     reject(new Error('Socket.IO가 연결되지 않았습니다.'));
                     return;
                 }
@@ -358,14 +320,14 @@ export const useMultiplayer = () => {
                 };
 
                 // 응답 리스너 등록
-                globalSocket.once('joinAutoRoomResponse', handleJoinResponse);
+                socketRef.current.once('joinAutoRoomResponse', handleJoinResponse);
 
                 // 서버에 요청 전송
                 emitMessage('joinAutoRoom', { name: playerName });
 
                 // 타임아웃 설정
                 setTimeout(() => {
-                    globalSocket?.off('joinAutoRoomResponse', handleJoinResponse);
+                    socketRef.current?.off('joinAutoRoomResponse', handleJoinResponse);
                     reject(new Error('룸 참여 요청이 시간 초과되었습니다.'));
                 }, 10000);
             });
@@ -440,13 +402,12 @@ export const useMultiplayer = () => {
 
     return {
         isConnected: multiplayerState.isConnected,
-        socket: globalSocket,
+        socket: socketRef.current,
         emitMessage,
         joinAutoRoom,
         leaveAutoRoom,
         sendPlayerInput,
         handleInput,
-        waitForConnection,
-        cleanupGlobalSocket,
+        cleanupSocket,
     };
 };
