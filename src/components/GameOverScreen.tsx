@@ -16,7 +16,6 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
     finalLevel,
     finalLines,
     onRestart,
-    onBackToMenu,
 }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
