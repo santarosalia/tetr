@@ -33,9 +33,7 @@ export const useMultiplayer = () => {
     // 게임 입력 처리 (멀티플레이어용)
     const handleInput = useCallback(
         (action: string) => {
-            console.log(gameState);
             if (gameState?.playerId) {
-                console.log(gameState);
                 sendPlayerInput(gameState?.playerId, action);
             }
         },

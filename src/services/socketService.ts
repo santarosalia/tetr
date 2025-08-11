@@ -216,7 +216,6 @@ class SocketService {
 
     // 게임 입력 전송
     sendPlayerInput(playerId: string, action: string) {
-        console.log('sendPlayerInput', playerId, action);
         this.emit('handlePlayerInput', { playerId, action });
     }
 
