@@ -1,8 +1,6 @@
 import React from 'react';
-import { useAppSelector, useAppDispatch } from '../hooks/redux';
+import { useAppSelector } from '../hooks/redux';
 import { TETROMINO_SHAPES } from '../constants/tetrominos';
-import { startGame } from '../store/tetrisSlice';
-import { isMobile } from '../utils/mobileDetection';
 
 // 보유 블록 컴포넌트
 export const HeldPiece: React.FC = () => {

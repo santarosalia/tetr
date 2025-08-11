@@ -313,7 +313,6 @@ export const MultiplayerGame: React.FC = () => {
                         finalScore={gameState?.score || 0}
                         finalLevel={gameState?.level || 1}
                         finalLines={gameState?.linesCleared || 0}
-                        onRestart={() => {}}
                         onBackToMenu={() => navigate('/')}
                     />
                 </div>
