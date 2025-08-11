@@ -19,6 +19,10 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
     const animationRef = useRef<number | null>(null);
     const timeRef = useRef<number>(0);
 
+    // 이전 currentPiece와 board 정보를 저장할 ref들
+    const prevCurrentPieceRef = useRef<any>(null);
+    const prevBoardRef = useRef<number[][] | null>(null);
+
     useEffect(() => {
         if (!canvasRef.current) return;
 
@@ -43,26 +47,52 @@ export const TetrisRenderer: React.FC<TetrisRendererProps> = ({ width, height })
         };
     }, [width, height]);
 
-    // 피스 배치 감지 및 파티클 효과 트리거
-    // useEffect(() => {
-    //     if (gameState?.currentPiece && physicsEffectsRef.current) {
-    //         // number[][]를 boolean[][]로 변환
-    //         console.log(gameState.currentPiece);
-    //         const booleanShape = gameState.currentPiece.shape.map((row) =>
-    //             row.map((cell) => cell !== 0)
-    //         );
+    // 피스 배치 감지 및 파티클 효과 트리거 (board 변경 감지 기반)
+    useEffect(() => {
+        if (!gameState?.board || !physicsEffectsRef.current) return;
 
-    //         physicsEffectsRef.current.createPieceDropEffect(
-    //             gameState.currentPiece.position.x,
-    //             gameState.currentPiece.position.y,
-    //             gameState.currentPiece.type,
-    //             booleanShape
-    //         );
+        const currentBoard = gameState.board;
+        const prevBoard = prevBoardRef.current;
+        const prevCurrentPiece = prevCurrentPieceRef.current;
 
-    //         // 파티클 효과 트리거 후 lastPlacedPiece 초기화
-    //         dispatch(clearLastPlacedPiece());
-    //     }
-    // }, [gameState?.currentPiece, dispatch]);
+        // board가 변경되었고, 이전 currentPiece가 있는 경우에만 파티클 효과 생성
+        if (
+            prevBoard &&
+            prevCurrentPiece &&
+            JSON.stringify(currentBoard) !== JSON.stringify(prevBoard)
+        ) {
+            // board에서 새로 추가된 블록들을 찾기
+            const newBlocks: { x: number; y: number; type: string }[] = [];
+
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    // 이전 board에는 없었지만 현재 board에는 있는 블록
+                    if (currentBoard[y]?.[x] && !prevBoard[y]?.[x]) {
+                        newBlocks.push({ x, y, type: prevCurrentPiece.type });
+                    }
+                }
+            }
+
+            // 새로 추가된 블록들에 대해 파티클 효과 생성
+            if (newBlocks.length > 0 && physicsEffectsRef.current) {
+                newBlocks.forEach((block) => {
+                    // 단일 블록을 위한 shape 생성
+                    const singleBlockShape = [[true]];
+
+                    physicsEffectsRef.current!.createPieceDropEffect(
+                        block.x,
+                        block.y,
+                        block.type,
+                        singleBlockShape
+                    );
+                });
+            }
+        }
+
+        // 현재 상태를 이전 상태로 저장
+        prevCurrentPieceRef.current = gameState.currentPiece;
+        prevBoardRef.current = JSON.parse(JSON.stringify(currentBoard));
+    }, [gameState?.board, gameState?.currentPiece]);
 
     // 배경 애니메이션 함수
     const animateBackground = (time: number) => {
