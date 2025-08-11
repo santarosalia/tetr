@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { TetrisRenderer } from './TetrisRenderer';
 import { HeldPiece, NextPiece } from './GameUI';
 import { GameOverScreen } from './GameOverScreen';
 import { RootState } from '../store';
-import { leaveRoom } from '../store/multiplayerSlice';
 import { useMultiplayer } from '../hooks/useMultiplayer';
 import { isMobile, isPortrait, getScreenSize } from '../utils/mobileDetection';
 import { Player } from '../types/multiplayer';
@@ -16,13 +15,11 @@ const UI_PANEL_WIDTH = 200;
 const HELD_PIECE_WIDTH = 200;
 
 export const MultiplayerGame: React.FC = () => {
-    const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { roomId } = useParams<{ roomId: string }>();
 
     const multiplayerState = useSelector((state: RootState) => state.multiplayer);
     const { currentPlayer, gameState, roomState } = multiplayerState;
-    const { leaveAutoRoom, isConnected, handleInput } = useMultiplayer();
+    const { isConnected, handleInput } = useMultiplayer();
 
     const [isMobileDevice, setIsMobileDevice] = useState(false);
     const [_isPortraitMode, setIsPortraitMode] = useState(false);
@@ -120,14 +117,6 @@ export const MultiplayerGame: React.FC = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
 
-    const handleLeaveRoom = useCallback(() => {
-        if (roomId && currentPlayer?.id) {
-            leaveAutoRoom(roomId, currentPlayer.id);
-        }
-        dispatch(leaveRoom());
-        navigate('/');
-    }, [roomId, currentPlayer?.id, leaveAutoRoom, dispatch, navigate]);
-
     // 플레이어 목록 렌더링 최적화
     const playerList = useMemo(() => {
         if (roomState?.players.length === 0) {
@@ -216,23 +205,6 @@ export const MultiplayerGame: React.FC = () => {
                             </div>
                         )}
                         {connectionStatus}
-                    </div>
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={handleLeaveRoom}
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                            룸 나가기
-                        </button>
-
-                        {gameState?.gameStarted && !gameState?.gameOver && (
-                            <button
-                                onClick={() => {}}
-                                className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-                            >
-                                다시 시작
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>
