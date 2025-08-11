@@ -98,7 +98,7 @@ class SocketService {
             }
 
             this.isConnecting = true;
-            const socketUrl = 'http://localhost:3000';
+            const socketUrl = import.meta.env.VITE_BASE_URL;
 
             const socket = io(socketUrl, {
                 transports: ['websocket', 'polling'],
@@ -216,6 +216,7 @@ class SocketService {
 
     // 게임 입력 전송
     sendPlayerInput(playerId: string, action: string) {
+        console.log('sendPlayerInput', playerId, action);
         this.emit('handlePlayerInput', { playerId, action });
     }
 
