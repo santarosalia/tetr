@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TetrisRenderer } from './TetrisRenderer';
-import { GameUI, HeldPiece, NextPiece } from './GameUI';
+import { HeldPiece, NextPiece } from './GameUI';
 import { GameOverScreen } from './GameOverScreen';
 import { RootState } from '../store';
 import { leaveRoom } from '../store/multiplayerSlice';
@@ -288,8 +288,11 @@ export const MultiplayerGame: React.FC = () => {
                         </div>
 
                         {/* 오른쪽 UI 패널 */}
-                        <div className="flex-shrink-0" style={{ width: UI_PANEL_WIDTH }}>
-                            <GameUI />
+                        <div
+                            className="flex-shrink-0 h-full"
+                            style={{ width: HELD_PIECE_WIDTH }}
+                        >
+                            <NextPiece />
                         </div>
                     </div>
                 )}
