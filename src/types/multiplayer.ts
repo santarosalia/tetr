@@ -42,7 +42,6 @@ export interface GameState {
     board: number[][];
     gameOver: boolean;
     paused: boolean;
-    isGameStarted: boolean;
     startTime: Date;
     lastActivity: Date;
     tetrominoBag: TetrominoType[];
