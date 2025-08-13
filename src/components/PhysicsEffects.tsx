@@ -83,8 +83,17 @@ export const PhysicsEffects = forwardRef<PhysicsEffectsRef, PhysicsEffectsProps>
             renderRef.current = render;
 
             // Start the engine and renderer
-            Matter.Engine.run(engine);
+            Matter.Runner.run(engine);
             Matter.Render.run(render);
+
+            Matter.Events.on(engine, 'afterUpdate', () => {
+                if (Matter.Composite.allBodies(engine.world).length > 100) {
+                    const removeBody = Matter.Composite.allBodies(engine.world).shift();
+                    if (removeBody) {
+                        Matter.World.remove(engine.world, removeBody);
+                    }
+                }
+            });
 
             // 파티클이 자연스럽게 화면 밖으로 나갈 때까지 지속
             // 자동 제거 타이머 제거 - 파티클이 물리 법칙에 따라 자연스럽게 사라짐
@@ -132,6 +141,7 @@ export const PhysicsEffects = forwardRef<PhysicsEffectsRef, PhysicsEffectsProps>
             });
 
             Matter.World.add(engineRef.current.world, block);
+
             return block;
         };
 
